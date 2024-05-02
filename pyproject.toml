@@ -16,7 +16,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = []     # add all the dependencies here
+dependencies = [
+    "ebdamame>=0.1.1",
+    "rebdhuhn" #  no min version because of https://github.com/Hochfrequenz/rebdhuhn/issues/202
+]     # add all the dependencies here
 dynamic = ["readme", "version"]
 
 [project.urls]

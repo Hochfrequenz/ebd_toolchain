@@ -1,4 +1,4 @@
-from mypackage.mymodule import MyClass
+from ebd_toolchain.mymodule import MyClass
 
 
 class TestMyClass:

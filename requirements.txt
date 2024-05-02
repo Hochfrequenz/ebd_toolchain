@@ -4,3 +4,55 @@
 #
 #    pip-compile pyproject.toml
 #
+attrs==23.2.0
+    # via
+    #   cattrs
+    #   ebdamame
+    #   ebdtable2graph
+    #   rebdhuhn
+cattrs==23.2.3
+    # via
+    #   ebdtable2graph
+    #   rebdhuhn
+certifi==2024.2.2
+    # via requests
+charset-normalizer==3.3.2
+    # via requests
+click==8.1.7
+    # via ebdamame
+colorama==0.4.6
+    # via click
+ebdamame==0.1.1
+    # via your-favourite-package-name (pyproject.toml)
+ebdtable2graph==0.1.20
+    # via ebdamame
+idna==3.7
+    # via requests
+lxml==5.2.1
+    # via
+    #   ebdtable2graph
+    #   python-docx
+    #   rebdhuhn
+    #   svgutils
+more-itertools==10.2.0
+    # via ebdamame
+networkx==3.3
+    # via
+    #   ebdtable2graph
+    #   rebdhuhn
+python-docx==1.1.2
+    # via ebdamame
+rebdhuhn==0.0.0
+    # via your-favourite-package-name (pyproject.toml)
+requests==2.31.0
+    # via
+    #   ebdtable2graph
+    #   rebdhuhn
+svgutils==0.3.4
+    # via
+    #   ebdtable2graph
+    #   rebdhuhn
+typing-extensions==4.11.0
+    # via python-docx
+urllib3==2.2.1
+    # via requests
