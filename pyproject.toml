@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "ebdamame>=0.1.1",
-    "rebdhuhn" #  no min version because of https://github.com/Hochfrequenz/rebdhuhn/issues/202
+    "rebdhuhn>=0.2.3"
 ]     # add all the dependencies here
 dynamic = ["readme", "version"]
 
