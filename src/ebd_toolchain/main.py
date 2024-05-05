@@ -20,7 +20,6 @@ from typing import Literal
 import cattrs
 import click
 
-# pylint:disable=import-error
 from ebdamame import TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
 from ebdamame.docxtableconverter import DocxTableConverter
 from rebdhuhn.graph_conversion import convert_table_to_graph
