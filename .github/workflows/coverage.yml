@@ -21,6 +21,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install tox
+      - name: Create .env file
+        run: python create_env_file.py
+      - name: Start containers
+        run: docker-compose up -d
       - name: Run Tests and Record Coverage
         run: |
           tox -e coverage
