@@ -18,8 +18,11 @@ classifiers = [
 ]
 dependencies = [
     "ebdamame>=0.1.3",
-    "rebdhuhn>=0.2.3"
-]     # add all the dependencies here
+    "rebdhuhn>=0.2.3",
+    "cattrs",
+    "click",
+    # add all the dependencies here
+]
 dynamic = ["readme", "version"]
 
 [project.urls]
