@@ -1,0 +1,7 @@
+version: "3.8"
+
+services:
+  kroki: # see https://docs.kroki.io/kroki/setup/use-docker-or-podman/#_run_multiple_kroki_containers_together
+    image: yuzutech/kroki:0.24.1
+    ports:
+      - "8126:8000"
