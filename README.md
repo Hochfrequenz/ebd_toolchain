@@ -14,20 +14,9 @@ Diese Entscheidungsbäume sind Teil eines regulatorischen Regelwerks für die de
 
 ### Install both libraries from PiPy:
 ```bash
-pip install ebdamame
+pip install -r requirements.txt
 ```
-```bash
-pip install rebdhuhn
-```
-Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8126). Add the required `.env` file to the repository root by opening a new terminal session, changing the directory to
-```bash
-cd path\to\rebdhuhn\repository\root
-```
-and executing the `create_env_file.py` script via
-```bash
-python create_env_file.py
-```
-Run the `docker-desktop` app on your local maschine and host the local kroki instance on PORT `8126` via
+Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8126) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme. Run the `docker-desktop` app on your local maschine and start the local kroki container via
 ```bash
 docker-compose up -d
 ```
