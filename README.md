@@ -5,7 +5,8 @@
 ![Linting status badge](https://github.com/Hochfrequenz/ebd_toolchain/workflows/Linting/badge.svg)
 ![Black status badge](https://github.com/Hochfrequenz/ebd_toolchain/workflows/Formatting/badge.svg)
 
-🇩🇪 Dieses Repository enthält ein Python-Script, welches die beiden Python-Pakete [ebdamame](https://github.com/Hochfrequenz/ebdamame) 🫛 und [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) 🐓 kombiniert, um aus .docx-Dateien maschinenlesbare Tabellen zur Modellierung von [edi@energy](https://www.edi-energy.de) Entscheidungsbäumen (EBD) zu extrahieren und anschließend in Form [echter Graphen](https://github.com/Hochfrequenz/edi_energy_mirror/) zu visualisieren. Diese Entscheidungsbäume sind Teil eines regulatorischen Regelwerks für die deutsche Energiewirtschaft und kommen in der Eingangsprüfung der Marktkommunikation zum Einsatz.
+🇩🇪 Dieses Repository enthält ein Python-Script, welches die beiden Python-Pakete [ebdamame](https://github.com/Hochfrequenz/ebdamame) 🫛 und [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) 🐓 kombiniert, um aus .docx-Dateien maschinenlesbare Tabellen zur Modellierung von [edi@energy](https://www.edi-energy.de) Entscheidungsbäumen (EBD) zu extrahieren und anschließend in Form [echter Graphen](https://github.com/Hochfrequenz/machine-readable_entscheidungsbaumdiagramme/) zu visualisieren.
+Diese Entscheidungsbäume sind Teil eines regulatorischen Regelwerks für die deutsche Energiewirtschaft und kommen in der Eingangsprüfung der Marktkommunikation zum Einsatz.
 
 🇺🇸 This repository provides a Python script combining the libraries [ebdamame](https://github.com/Hochfrequenz/ebdamame) and [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) in order to render [edi@energy](https://www.edi-energy.de) _Entscheidungsbaumdiagramme_ (EBD) as both machine-readable tables as well as corresponding graphs in `.svg` and `.uml` format.
 
