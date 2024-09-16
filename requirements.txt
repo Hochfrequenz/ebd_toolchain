@@ -23,7 +23,7 @@ ebdamame==0.1.5
     # via your-favourite-package-name (pyproject.toml)
 idna==3.7
     # via requests
-lxml==5.2.2
+lxml==5.3.0
     # via
     #   python-docx
     #   rebdhuhn
