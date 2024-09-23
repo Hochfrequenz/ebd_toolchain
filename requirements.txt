@@ -9,7 +9,7 @@ attrs==24.2.0
     #   cattrs
     #   ebdamame
     #   rebdhuhn
-cattrs==23.2.3
+cattrs==24.1.2
     # via rebdhuhn
 certifi==2024.8.30
     # via requests
