@@ -1,10 +1,10 @@
 [project]
-name = "your-favourite-package-name"
-description = "Description of your package"
+name = "ebd-toolchain"
+description = "Combines the features of ebdamame and rebdhuhn to automatically generate SVGs from EBD.docx files"
 license = { text = "MIT" }
 requires-python = ">=3.11"
-authors = [{ name = "your name", email = "your@email.address" }]
-keywords = ["your", "important", "keywords"]
+authors = [{ name = "Hochfrequenz Unternehmensberatung GmbH", email = "info+github@hochfrequenz.de" }]
+keywords = ["EBD", "rebdhuhn", "ebdamame", "scraping", "python-docx", "kroki", "entscheidungsbaumdiagramm"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -35,8 +35,8 @@ tests = ["pytest==8.3.3"]
 type_check = ["mypy==1.11.2"]
 
 [project.urls]
-Changelog = "https://github.com/Hochfrequenz/python_template_repository/releases"
-Homepage = "https://github.com/Hochfrequenz/python_template_repository"
+Changelog = "https://github.com/Hochfrequenz/ebd_toolchain/releases"
+Homepage = "https://github.com/Hochfrequenz/ebd_toolchain"
 
 [tool.black]
 line-length = 120
@@ -53,7 +53,7 @@ max-line-length = 120
 truethy-bool = true
 
 [tool.mypy]
-disable_error_code = ["no-untyped-def", "no-untyped-call"]
+disable_error_code = []
 
 [project.scripts]
 scrape_and_plot = "ebd_toolchain.main:main"
@@ -74,7 +74,7 @@ fragments = [{ path = "README.md" }]
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "src/_your_package_version.py"
+version-file = "src/_ebd_toolchain_version.py"
 template = '''
 version = "{version}"
 '''
