@@ -1,0 +1,6 @@
+[submodule "edi_energy_mirror"]
+	path = edi_energy_mirror
+	url = https://github.com/Hochfrequenz/edi_energy_mirror
+[submodule "machine-readable_entscheidungsbaumdiagramme"]
+	path = machine-readable_entscheidungsbaumdiagramme
+	url = https://github.com/Hochfrequenz/machine-readable_entscheidungsbaumdiagramme/
