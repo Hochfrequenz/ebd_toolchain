@@ -175,3 +175,4 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
 if __name__ == "__main__":
     # the parameter arguments gets provided over the CLI
     main()  # pylint:disable=no-value-for-parameter
+    # ⚠️ If you rename main(), you also need to refer to the new function in the pyproject.toml project.scripts section
