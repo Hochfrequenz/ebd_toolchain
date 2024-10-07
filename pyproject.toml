@@ -55,6 +55,13 @@ truethy-bool = true
 [tool.mypy]
 disable_error_code = []
 
+[project.scripts]
+scrape_and_plot = "ebd_toolchain.main:main"
+# `package.model:func` syntax:
+# 1. `ebd_toolchain` is the package in the src directory
+# 2. `.main` means the main.py module inside the ebd_toolchain package
+# 3. `:main` means the main(...) function inside the main.py module
+
 [build-system]
 requires = ["hatchling>=1.8.0", "hatch-vcs", "hatch-fancy-pypi-readme"]
 build-backend = "hatchling.build"
