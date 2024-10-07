@@ -12,6 +12,16 @@ A small click-based script to extract all EBDs from a given .docx file (availabl
 # main.py -i unittests/test_data/ebd20230629_v34.docx
 #  -o ../machine-readable_entscheidungsbaumdiagramme/FV2310
 #  -t json -t dot -t svg -t puml
+#
+# or
+# install this package using `pip install .`
+# or `git+https://$github_username:$gh_personal_token@$github.com/Hochfrequenz/ebd_toolchain.git@$v1.2.3`
+#
+# and then call
+# scrape_and_graph -i unittests/test_data/ebd20230629_v34.docx
+#  -o ../machine-readable_entscheidungsbaumdiagramme/FV2310
+#  -t json -t dot -t svg -t puml
+# where scrape_and_graph is just a placeholder/link to the main.py file as defined in the pyproject.toml scripts section
 
 import json
 from pathlib import Path
