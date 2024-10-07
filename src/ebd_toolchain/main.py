@@ -15,7 +15,7 @@ A small click-based script to extract all EBDs from a given .docx file (availabl
 #
 # or
 # install this package using `pip install .`
-# or `git+https://$github_username:$gh_personal_token@$github.com/Hochfrequenz/ebd_toolchain.git@$v1.2.3`
+# or `git+https://$github_username:$gh_personal_token@github.com/Hochfrequenz/ebd_toolchain.git@$v1.2.3`
 #
 # and then call
 # scrape_and_graph -i unittests/test_data/ebd20230629_v34.docx
