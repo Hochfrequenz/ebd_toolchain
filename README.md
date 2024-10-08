@@ -48,9 +48,35 @@ where `-i`, `-o` and `-t` denote the input directory path, the output directory 
 In this repository:
 1. create an `.env` file with a structure similar to [`env.example`](env.example).
 2. set the environment variables to meaningful values.
-3. then run:
+3. Create a `docker-compose.yml` with the following content:
+```yaml
+services:
+  kroki:
+    image: yuzutech/kroki:0.24.1
+    ports:
+      - "8125:8000"  # Expose Kroki on port 8125 for rendering diagrams
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  scrape-and-plot:
+    image: ghcr.io/Hochfrequenz/ebd_toolchain:latest
+    depends_on:
+      kroki:
+        condition: service_healthy
+    volumes:
+      - ${EBD_DOCX_FILE}:/container/ebd.docx
+      - ${OUTPUT_DIR}:/container/output
+    network_mode: host
+```
+4. Login to GitHub Container Registry (GHCR); Use a Personal Access Token (PAT) to login that has access to this repository and at least `read:package` scope
 ```bash
-docker-compose build
+docker login ghcr.io -u YOUR_GITHUB_USERNAME
+```
+5. then run:
+```bash
 docker-compose up
 ```
 
