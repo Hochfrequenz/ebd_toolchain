@@ -75,7 +75,7 @@ services:
       - ${OUTPUT_DIR}:/container/output
     network_mode: host
 ```
-4. Login to GitHub Container Registry (GHCR); Use a Personal Access Token (PAT) to login that has access to this repository and at least `read:package` scope
+4. Login to GitHub Container Registry (GHCR); Use a [Personal Access Token](https://github.com/settings/tokens/new) (PAT) to login that has access to this repository and at least `read:packages` scope
 ```bash
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
 ```
