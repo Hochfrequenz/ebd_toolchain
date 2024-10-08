@@ -11,16 +11,21 @@ Diese Entscheidungsbäume sind Teil eines regulatorischen Regelwerks für die de
 🇺🇸 This repository provides a Python script combining the libraries [ebdamame](https://github.com/Hochfrequenz/ebdamame) and [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) in order to render [edi@energy](https://www.edi-energy.de) _Entscheidungsbaumdiagramme_ (EBD) as both machine-readable tables as well as corresponding graphs in `.svg` and `.uml` format.
 
 ## How to use EBD Toolchain
+You can either run the toolchain via Python (requires Docker AND Python to be installed on your machine).
+Or you can run the entire toolchain in a docker container (requires only Docker).
 
-### Install both libraries from PiPy:
+### Option A: Via Python + Kroki in a Docker Container
+
+#### Install both libraries from PiPy:
 ```bash
 pip install -r requirements.txt
 ```
-Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8125) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme. Run the `docker-desktop` app on your local maschine and start the local kroki container via
+Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8125) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme.
+Run the `docker-desktop` app on your local maschine and start the local kroki container via
 ```bash
 docker-compose up -d
 ```
-### Execute the EBD toolchain script:
+#### Execute the EBD toolchain script:
 
 Run `main.py` using your IDE or inside a terminal session via
 ```bash
@@ -38,6 +43,16 @@ Alternatively, the script can simply be executed using the single command
 main.py -i <path to .doxc location> -o <output directory> -t json -t dot -t svg -t puml
 ```
 where `-i`, `-o` and `-t` denote the input directory path, the output directory path and the supported data format, respectively.
+
+### Option B: Docker only (no Python required)
+In this repository:
+1. create an `.env` file with a structure similar to [`env.example`](env.example).
+2. set the environment variables to meaningful values.
+3. then run:
+```bash
+docker-compose build
+docker-compose up
+```
 
 ## How to use this Repository on Your Machine (for development)
 
