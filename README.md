@@ -55,6 +55,7 @@ services:
     image: yuzutech/kroki:0.24.1
     ports:
       - "8125:8000"  # Expose Kroki on port 8125 for rendering diagrams
+      # we hardcode 8125 because of https://github.com/Hochfrequenz/rebdhuhn/issues/205
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
