@@ -26,5 +26,5 @@ jobs:
       - name: Build and push
         run: |
           docker build -t ebd_toolchain:$VERSION .
-          docker tag ahbicht-functions:$VERSION ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
+          docker tag ebd_toolchain:$VERSION ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
           docker push ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
