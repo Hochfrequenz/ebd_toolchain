@@ -62,7 +62,7 @@ services:
       retries: 3
 
   scrape-and-plot:
-    image: ghcr.io/Hochfrequenz/ebd_toolchain:latest
+    image: ghcr.io/hochfrequenz/ebd_toolchain:latest
     depends_on:
       kroki:
         condition: service_healthy
