@@ -64,6 +64,9 @@ services:
 
   scrape-and-plot:
     image: ghcr.io/hochfrequenz/ebd_toolchain:latest
+    # If you run into 'manifest unknown' during docker pull, try replacing `:latest` with `:v1.2.3`.
+    # where v1.2.3 is the latest version of the GHCR image, which can be found here:
+    # https://github.com/Hochfrequenz/ebd_toolchain/pkgs/container/ebd_toolchain 
     depends_on:
       kroki:
         condition: service_healthy
