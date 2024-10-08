@@ -1,7 +1,21 @@
-version: "3.8"
-
 services:
-  kroki: # see https://docs.kroki.io/kroki/setup/use-docker-or-podman/#_run_multiple_kroki_containers_together
+  kroki:
     image: yuzutech/kroki:0.24.1
     ports:
-      - "8126:8000"
+      - "8125:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  scrape-and-plot:
+    build: .
+    depends_on:
+      kroki:
+        condition: service_healthy
+    volumes:
+      - ${EBD_DOCX_FILE}:/container/ebd.docx
+      - ${OUTPUT_DIR}:/container/output
+    network_mode: host  # Allow the container to use the host's network
+    # this prevents: requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8125): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7fddfb8c9430>: Failed to establish a new connection: [Errno 111] Connection refused'))

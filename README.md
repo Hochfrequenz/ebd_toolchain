@@ -16,12 +16,12 @@ Diese Entscheidungsbäume sind Teil eines regulatorischen Regelwerks für die de
 ```bash
 pip install -r requirements.txt
 ```
-Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8126) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme. Run the `docker-desktop` app on your local maschine and start the local kroki container via
+Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8125) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme. Run the `docker-desktop` app on your local maschine and start the local kroki container via
 ```bash
 docker-compose up -d
 ```
 ### Execute the EBD toolchain script:
- 
+
 Run `main.py` using your IDE or inside a terminal session via
 ```bash
 python main.py
