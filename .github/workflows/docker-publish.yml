@@ -1,0 +1,30 @@
+name: Publish Docker image to Github Container Registry GHCR
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  push_to_registry:
+    name: Push Docker image to GHCR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        # with: # we don't need this
+        #  submodules: "recursive"
+      - name: get version tag
+        run: |
+          VERSION=$(echo ${GITHUB_REF#refs/tags/})
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Log in to GHCR
+        # the token has repo:write and package scope and expires on 2025-10-08
+        # https://github.com/Hochfrequenz/ebd_toolchain/settings/secrets/actions/GHCR_PUSH_TOKEN
+        run: echo "${{ secrets.GHCR_PUSH_TOKEN }}" | docker login ghcr.io -u hf-kklein --password-stdin
+
+      - name: Build and push
+        run: |
+          docker build -t ebd_toolchain:$VERSION .
+          docker tag ebd_toolchain:$VERSION ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
+          docker push ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
