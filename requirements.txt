@@ -30,7 +30,7 @@ lxml==5.3.0
     #   svgutils
 more-itertools==10.5.0
     # via ebdamame
-networkx==3.3
+networkx==3.4.1
     # via rebdhuhn
 python-docx==1.1.2
     # via ebdamame
