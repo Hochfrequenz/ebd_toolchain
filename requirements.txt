@@ -19,7 +19,7 @@ click==8.1.7
     # via ebdamame
 colorama==0.4.6
     # via click
-ebdamame==0.1.7
+ebdamame==0.2.0
     # via your-favourite-package-name (pyproject.toml)
 idna==3.10
     # via requests
