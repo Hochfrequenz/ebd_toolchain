@@ -1,7 +1,7 @@
 [project]
 name = "ebd-toolchain"
 description = "Combines the features of ebdamame and rebdhuhn to automatically generate SVGs from EBD.docx files"
-license = { text = "GPL" }
+license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.11"
 authors = [{ name = "Hochfrequenz Unternehmensberatung GmbH", email = "info+github@hochfrequenz.de" }]
 keywords = ["EBD", "rebdhuhn", "ebdamame", "scraping", "python-docx", "kroki", "entscheidungsbaumdiagramm"]
@@ -9,7 +9,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GPL License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
