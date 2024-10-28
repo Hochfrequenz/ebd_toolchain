@@ -84,6 +84,8 @@ docker login ghcr.io -u YOUR_GITHUB_USERNAME
 docker compose up --abort-on-container-exit
 ```
 
+You can find a [Github Action with exactly this setup](https://github.com/Hochfrequenz/edi_energy_mirror/blob/master/.github/workflows/ebdamame_rebdhuhn.yml) our edi_energy_mirror where it's used to automatically scrape the latest `.docx` files and pushes the results to [machine-readable_entscheidungsbaumdiagramme](https://github.com/Hochfrequenz/machine-readable_entscheidungsbaumdiagramme/) which is then used by our frontend  [`entscheidungbaumdiagramm`](https://github.com/Hochfrequenz/entscheidungsbaumdiagramm/).
+
 ## How to use this Repository on Your Machine (for development)
 
 Please follow the instructions in our
