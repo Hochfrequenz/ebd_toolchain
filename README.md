@@ -66,7 +66,7 @@ services:
     image: ghcr.io/hochfrequenz/ebd_toolchain:latest
     # If you run into 'manifest unknown' during docker pull, try replacing `:latest` with `:v1.2.3`.
     # where v1.2.3 is the latest version of the GHCR image, which can be found here:
-    # https://github.com/Hochfrequenz/ebd_toolchain/pkgs/container/ebd_toolchain 
+    # https://github.com/Hochfrequenz/ebd_toolchain/pkgs/container/ebd_toolchain
     depends_on:
       kroki:
         condition: service_healthy
@@ -81,7 +81,7 @@ docker login ghcr.io -u YOUR_GITHUB_USERNAME
 ```
 5. then run:
 ```bash
-docker-compose up
+docker compose up --abort-on-container-exit
 ```
 
 ## How to use this Repository on Your Machine (for development)
