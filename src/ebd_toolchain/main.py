@@ -133,8 +133,9 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             click.secho(f"Error while scraping {ebd_key}: {str(scraping_error)}; Skip!", fg="red")
             continue
         if "json" in export_types:
-            _dump_json(output_path / Path(f"{ebd_key}.json"), ebd_table)
-            click.secho(f"💾 Successfully exported '{ebd_key}.json'")
+            json_path = output_path / Path(f"{ebd_key}.json")
+            _dump_json(json_path, ebd_table)
+            click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
         try:
             ebd_graph = convert_table_to_graph(ebd_table)
         except (EbdCrossReferenceNotSupportedError, EndeInWrongColumnError, OutcomeCodeAmbiguousError) as known_issue:
@@ -145,8 +146,9 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             continue
         if "puml" in export_types:
             try:
-                _dump_puml(output_path / Path(f"{ebd_key}.puml"), ebd_graph)
-                click.secho(f"💾 Successfully exported '{ebd_key}.puml'")
+                puml_path = output_path / Path(f"{ebd_key}.puml")
+                _dump_puml(puml_path, ebd_graph)
+                click.secho(f"💾 Successfully exported '{ebd_key}.puml' to {puml_path.absolute()}")
             except AssertionError as assertion_error:
                 # https://github.com/Hochfrequenz/rebdhuhn/issues/35
                 click.secho(str(assertion_error), fg="red")
@@ -157,11 +159,13 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
 
         try:
             if "dot" in export_types:
-                _dump_dot(output_path / Path(f"{ebd_key}.dot"), ebd_graph)
-                click.secho(f"💾 Successfully exported '{ebd_key}.dot'")
+                dot_path = output_path / Path(f"{ebd_key}.dot")
+                _dump_dot(dot_path, ebd_graph)
+                click.secho(f"💾 Successfully exported '{ebd_key}.dot' to {dot_path.absolute()}")
             if "svg" in export_types:
-                _dump_svg(output_path / Path(f"{ebd_key}.svg"), ebd_graph)
-                click.secho(f"💾 Successfully exported '{ebd_key}.svg'")
+                svg_path = output_path / Path(f"{ebd_key}.svg")
+                _dump_svg(svg_path, ebd_graph)
+                click.secho(f"💾 Successfully exported '{ebd_key}.svg' to {svg_path.absolute()}")
         except PathsNotGreaterThanOneError as known_issue:
             handle_known_error(known_issue, ebd_key)
         except AssertionError as assertion_error:
