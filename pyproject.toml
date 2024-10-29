@@ -21,6 +21,8 @@ dependencies = [
     "rebdhuhn>=0.2.3",
     "cattrs",
     "click",
+    "python-dotenv",
+    "pydantic-settings"
     # add all the dependencies here
 ]
 dynamic = ["readme", "version"]
