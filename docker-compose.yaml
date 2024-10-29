@@ -2,7 +2,8 @@ services:
   kroki:
     image: yuzutech/kroki:0.24.1
     ports:
-      - ${KROKI_PORT:-8215}:8000
+      - ${KROKI_PORT:-8125}:8000
+
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 10s
