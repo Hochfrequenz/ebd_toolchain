@@ -48,10 +48,15 @@ from rebdhuhn.models.errors import (
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
 
+# pylint:disable=too-few-public-methods
 class Settings(BaseSettings):
+    """settings loaded from environment variable/.env file"""
+
     kroki_port: int
 
     class Config:
+        """references the .env file"""
+
         env_file = ".env"
 
 
@@ -107,7 +112,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
     """
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
-    kroki_client = Kroki(kroki_host=f"http://localhost:{Settings().kroki_port}")
+    kroki_client = Kroki(kroki_host=f"http://localhost:{Settings().kroki_port}")  # type:ignore[call-arg]
     if output_path.exists():
         click.secho(f"The output directory '{output_path}' exists already.", fg="yellow")
     else:
