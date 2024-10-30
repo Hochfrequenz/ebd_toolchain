@@ -1,10 +1,12 @@
+# mypy: disable-error-code="call-arg"
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from pydantic import ValidationError
 
 from ebd_toolchain.main import Settings
 
 
-def test_settings_from_env(monkeypatch):
+def test_settings_from_env(monkeypatch: MonkeyPatch) -> None:
     # Mock environment variables to simulate the .env behavior
     monkeypatch.setenv("KROKI_PORT", "8000")
     monkeypatch.setenv("KROKI_HOST", "localhost")
@@ -17,7 +19,7 @@ def test_settings_from_env(monkeypatch):
     assert settings.kroki_host == "localhost"
 
 
-def test_settings_missing_required_fields(monkeypatch):
+def test_settings_missing_required_fields(monkeypatch: MonkeyPatch) -> None:
     # Ensure no environment variables are set
     monkeypatch.delenv("KROKI_PORT", raising=False)
     monkeypatch.delenv("KROKI_HOST", raising=False)
@@ -27,7 +29,7 @@ def test_settings_missing_required_fields(monkeypatch):
         Settings()
 
 
-def test_invalid_port_value(monkeypatch):
+def test_invalid_port_value(monkeypatch: MonkeyPatch) -> None:
     # Set invalid environment variables
     monkeypatch.setenv("KROKI_PORT", "not_an_integer")
     monkeypatch.setenv("KROKI_HOST", "localhost")
