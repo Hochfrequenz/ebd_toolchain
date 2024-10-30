@@ -32,7 +32,7 @@ import click
 from ebdamame import TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
 from rebdhuhn.kroki import DotToSvgConverter, Kroki
@@ -53,7 +53,9 @@ from rebdhuhn.plantuml import convert_graph_to_plantuml
 class Settings(BaseSettings):
     """settings loaded from environment variable/.env file"""
 
+    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
     kroki_port: int = Field(alias="KROKI_PORT")
+    kroki_host: str = Field(alias="KROKI_HOST")
 
 
 def _dump_puml(puml_path: Path, ebd_graph: EbdGraph) -> None:
@@ -108,7 +110,8 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
     """
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
-    kroki_client = Kroki(kroki_host=f"http://localhost:{Settings().kroki_port}")  # type:ignore[call-arg]
+    settings = Settings()  # read settings from environment variable/.env file
+    kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")  # type:ignore[call-arg]
     if output_path.exists():
         click.secho(f"The output directory '{output_path}' exists already.", fg="yellow")
     else:
