@@ -26,7 +26,7 @@ def test_settings_missing_required_fields(monkeypatch: MonkeyPatch) -> None:
 
     # Expecting ValidationError due to missing required environment variables
     with pytest.raises(ValidationError):
-        Settings()
+        Settings(_env_file="foo.env")  # change env file to avoid loading from .env
 
 
 def test_invalid_port_value(monkeypatch: MonkeyPatch) -> None:
