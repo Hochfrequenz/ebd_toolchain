@@ -53,7 +53,10 @@ In this repository:
 ```bash
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
 ```
-4. then run:
+4. create a docker-compose.yml that looks like this:
+https://github.com/Hochfrequenz/ebd_toolchain/blob/367d64c5364f49396d5e1aca1b1c9995808685a6/docker-compose.yaml#L1-L21
+
+5. then run:
 ```bash
 docker compose up --abort-on-container-exit
 ```
