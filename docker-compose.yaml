@@ -9,10 +9,10 @@ services:
 
   scrape-and-plot:
     build: .
+    image: ghcr.io/hochfrequenz/ebd_toolchain:latest
     volumes:
       - ${EBD_DOCX_FILE}:/container/ebd.docx
       - ${OUTPUT_DIR}:/container/output
     env_file:
       - path: .env
         required: true  # default is true
-   
