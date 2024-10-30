@@ -31,8 +31,11 @@ import cattrs
 import click
 from ebdamame import TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
 from ebdamame.docxtableconverter import DocxTableConverter
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
+from rebdhuhn.kroki import DotToSvgConverter, Kroki
 from rebdhuhn.models.ebd_graph import EbdGraph
 from rebdhuhn.models.ebd_table import EbdTable
 from rebdhuhn.models.errors import (
@@ -44,6 +47,15 @@ from rebdhuhn.models.errors import (
     PathsNotGreaterThanOneError,
 )
 from rebdhuhn.plantuml import convert_graph_to_plantuml
+
+
+# pylint:disable=too-few-public-methods
+class Settings(BaseSettings):
+    """settings loaded from environment variable/.env file"""
+
+    kroki_port: int = Field(alias="KROKI_PORT")
+    kroki_host: str = Field(alias="KROKI_HOST")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 def _dump_puml(puml_path: Path, ebd_graph: EbdGraph) -> None:
@@ -58,9 +70,9 @@ def _dump_dot(dot_path: Path, ebd_graph: EbdGraph) -> None:
         uml_file.write(dot_code)
 
 
-def _dump_svg(svg_path: Path, ebd_graph: EbdGraph) -> None:
+def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter) -> None:
     dot_code = convert_graph_to_dot(ebd_graph)
-    svg_code = convert_dot_to_svg_kroki(dot_code)
+    svg_code = convert_dot_to_svg_kroki(dot_code, converter)
     with open(svg_path, "w+", encoding="utf-8") as svg_file:
         svg_file.write(svg_code)
 
@@ -98,6 +110,9 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
     """
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
+    settings = Settings()  # type:ignore[call-arg]
+    # read settings from environment variable/.env file
+    kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
     if output_path.exists():
         click.secho(f"The output directory '{output_path}' exists already.", fg="yellow")
     else:
@@ -164,7 +179,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
                 click.secho(f"💾 Successfully exported '{ebd_key}.dot' to {dot_path.absolute()}")
             if "svg" in export_types:
                 svg_path = output_path / Path(f"{ebd_key}.svg")
-                _dump_svg(svg_path, ebd_graph)
+                _dump_svg(svg_path, ebd_graph, kroki_client)
                 click.secho(f"💾 Successfully exported '{ebd_key}.svg' to {svg_path.absolute()}")
         except PathsNotGreaterThanOneError as known_issue:
             handle_known_error(known_issue, ebd_key)

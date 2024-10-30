@@ -18,9 +18,10 @@ classifiers = [
 ]
 dependencies = [
     "ebdamame>=0.1.3",
-    "rebdhuhn>=0.2.3",
+    "rebdhuhn>=0.4.0",
     "cattrs",
     "click",
+    "pydantic-settings"
     # add all the dependencies here
 ]
 dynamic = ["readme", "version"]
