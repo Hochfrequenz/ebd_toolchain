@@ -49,38 +49,11 @@ where `-i`, `-o` and `-t` denote the input directory path, the output directory 
 In this repository:
 1. create an `.env` file with a structure similar to [`env.example`](env.example).
 2. set the environment variables to meaningful values.
-3. Create a `docker-compose.yml` with the following content:
-```yaml
-services:
-  kroki:
-    image: yuzutech/kroki:0.24.1
-    ports:
-      - "8125:8000"  # Expose Kroki on port 8125 for rendering diagrams
-      # we hardcode 8125 because of https://github.com/Hochfrequenz/rebdhuhn/issues/205
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  scrape-and-plot:
-    image: ghcr.io/hochfrequenz/ebd_toolchain:latest
-    # If you run into 'manifest unknown' during docker pull, try replacing `:latest` with `:v1.2.3`.
-    # where v1.2.3 is the latest version of the GHCR image, which can be found here:
-    # https://github.com/Hochfrequenz/ebd_toolchain/pkgs/container/ebd_toolchain
-    depends_on:
-      kroki:
-        condition: service_healthy
-    volumes:
-      - ${EBD_DOCX_FILE}:/container/ebd.docx
-      - ${OUTPUT_DIR}:/container/output
-    network_mode: host
-```
-4. Login to GitHub Container Registry (GHCR); Use a [Personal Access Token](https://github.com/settings/tokens/new) (PAT) to login that has access to this repository and at least `read:packages` scope
+3. Login to GitHub Container Registry (GHCR); Use a [Personal Access Token](https://github.com/settings/tokens/new) (PAT) to login that has access to this repository and at least `read:packages` scope
 ```bash
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
 ```
-5. then run:
+4. then run:
 ```bash
 docker compose up --abort-on-container-exit
 ```
