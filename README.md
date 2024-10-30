@@ -54,7 +54,7 @@ In this repository:
 docker login ghcr.io -u YOUR_GITHUB_USERNAME
 ```
 4. create a docker-compose.yml that looks like this:
-https://github.com/Hochfrequenz/ebd_toolchain/blob/367d64c5364f49396d5e1aca1b1c9995808685a6/docker-compose.yaml#L1-L21
+https://github.com/Hochfrequenz/ebd_toolchain/blob/f71c4285f1d1515b36b604487da298708b8858fa/docker-compose.yaml#L1-L22
 
 5. then run:
 ```bash
