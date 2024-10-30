@@ -111,7 +111,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
     settings = Settings()  # read settings from environment variable/.env file
-    kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")  # type:ignore[call-arg]
+    kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
     if output_path.exists():
         click.secho(f"The output directory '{output_path}' exists already.", fg="yellow")
     else:
