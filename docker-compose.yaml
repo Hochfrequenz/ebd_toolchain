@@ -1,11 +1,6 @@
 services:
   kroki:
     image: yuzutech/kroki:0.24.1
-    ports:
-      - ${KROKI_PORT:-8125}:8000
-    env_file:
-      - path: .env
-        required: true  # default is true
 
   scrape-and-plot:
     build: .
@@ -16,6 +11,12 @@ services:
     volumes:
       - ${EBD_DOCX_FILE}:/container/ebd.docx
       - ${OUTPUT_DIR}:/container/output
+    # we need to set the KROKI_HOST and KROKI_PORT to the host and port of the kroki service
+    # this is configurable here, but it does not need to be changed if the kroki service is named "kroki"
+    environment:
+      KROKI_PORT: "8000"
+      KROKI_HOST: "kroki"
+    # the .env file contains the parameter which the user can set
     env_file:
       - path: .env
         required: true  # default is true
