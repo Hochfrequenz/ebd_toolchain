@@ -53,9 +53,9 @@ from rebdhuhn.plantuml import convert_graph_to_plantuml
 class Settings(BaseSettings):
     """settings loaded from environment variable/.env file"""
 
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
     kroki_port: int = Field(alias="KROKI_PORT")
     kroki_host: str = Field(alias="KROKI_HOST")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 def _dump_puml(puml_path: Path, ebd_graph: EbdGraph) -> None:
