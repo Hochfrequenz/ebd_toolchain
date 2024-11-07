@@ -168,6 +168,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 json_path = output_path / Path(f"{ebd_key}.json")
                 _dump_json(json_path, ebd_meta_data)
                 click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
+                continue;
         try:
             assert not isinstance(docx_tables, EbdNoTableSection)
             converter = DocxTableConverter(
