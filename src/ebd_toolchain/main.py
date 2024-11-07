@@ -80,7 +80,7 @@ def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter)
         svg_file.write(svg_code)
 
 
-def _dump_json(json_path: Path, ebd_table: EbdTable) -> None:
+def _dump_json(json_path: Path, ebd_table: EbdTable | EbdNoTableSection) -> None:
     with open(json_path, "w+", encoding="utf-8") as json_file:
         json.dump(cattrs.unstructure(ebd_table), json_file, ensure_ascii=False, indent=2, sort_keys=True)
 
@@ -144,8 +144,19 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             continue
         assert ebd_kapitel is not None
         if isinstance(docx_tables, EbdNoTableSection):
-            _logger.warning("The EBD has no table: %s", ebd_key)
-            continue
+            if "json" in export_types:
+                ebd_meta_data = EbdTableMetaData(
+                    ebd_code=ebd_key,
+                    ebd_name=ebd_kapitel.section_title,
+                    chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
+                    # pylint:disable=line-too-long
+                    section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
+                    role="N/A",
+                    remark=docx_tables.remark,
+                )
+                json_path = output_path / Path(f"{ebd_key}.json")
+                _dump_json(json_path, ebd_meta_data)
+                click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
         try:
             converter = DocxTableConverter(
                 docx_tables,
