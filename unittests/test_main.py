@@ -4,8 +4,9 @@ tests the main script
 
 from pathlib import Path
 from typing import Literal
-from _pytest.monkeypatch import MonkeyPatch
+
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from ebd_toolchain.main import _main
 
