@@ -153,6 +153,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             click.secho(f"Table not found: {ebd_key}: {str(table_not_found_error)}; Skip!", fg="yellow")
             continue
         assert ebd_kapitel is not None
+        assert ebd_kapitel.subsection_title is not None
         if isinstance(docx_tables, EbdNoTableSection):
             if "json" in export_types:
                 ebd_meta_data = EbdTableMetaData(
