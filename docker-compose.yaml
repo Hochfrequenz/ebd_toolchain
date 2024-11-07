@@ -1,7 +1,9 @@
 services:
   kroki:
     image: yuzutech/kroki:0.24.1
-
+    ports:
+      - "8000:8000"  # Expose localhost:8000
+      # this is required for the test_main.py to directly use kroki
   scrape-and-plot:
     build: .
     image: ghcr.io/hochfrequenz/ebd_toolchain:latest

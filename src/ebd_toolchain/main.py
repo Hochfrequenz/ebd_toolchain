@@ -36,7 +36,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
-from rebdhuhn.kroki import DotToSvgConverter, Kroki
+from rebdhuhn.kroki import DotToSvgConverter, Kroki, KrokiDotBadRequestError, KrokiPlantUmlBadRequestError
 from rebdhuhn.models.ebd_graph import EbdGraph
 from rebdhuhn.models.ebd_table import EbdTable
 from rebdhuhn.models.errors import (
@@ -108,11 +108,16 @@ def _dump_json(json_path: Path, ebd_table: EbdTable) -> None:
     multiple=True,
     help="Choose which file you'd like to create",
 )
-# pylint:disable=too-many-locals, too-many-branches, too-many-statements,
 def main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
     """
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
+    _main(input_path, output_path, export_types)
+
+
+# pylint:disable=too-many-locals, too-many-branches, too-many-statements,
+def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
+    """same as main but without the click decorators"""
     settings = Settings()  # type:ignore[call-arg]
     # read settings from environment variable/.env file
     kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
@@ -175,7 +180,11 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             except AssertionError as assertion_error:
                 # https://github.com/Hochfrequenz/rebdhuhn/issues/35
                 click.secho(str(assertion_error), fg="red")
-            except (NotExactlyTwoOutgoingEdgesError, GraphTooComplexForPlantumlError) as known_issue:
+            except (
+                NotExactlyTwoOutgoingEdgesError,
+                GraphTooComplexForPlantumlError,
+                KrokiPlantUmlBadRequestError,
+            ) as known_issue:
                 handle_known_error(known_issue, ebd_key)
             except Exception as general_error:  # pylint:disable=broad-exception-caught
                 click.secho(f"Error while exporting {ebd_key} as UML: {str(general_error)}; Skip!", fg="yellow")
@@ -189,7 +198,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
                 svg_path = output_path / Path(f"{ebd_key}.svg")
                 _dump_svg(svg_path, ebd_graph, kroki_client)
                 click.secho(f"💾 Successfully exported '{ebd_key}.svg' to {svg_path.absolute()}")
-        except PathsNotGreaterThanOneError as known_issue:
+        except (PathsNotGreaterThanOneError, KrokiDotBadRequestError) as known_issue:
             handle_known_error(known_issue, ebd_key)
         except AssertionError as assertion_error:
             # e.g. AssertionError: If indegree > 1, the number of paths should always be greater than 1 too.
