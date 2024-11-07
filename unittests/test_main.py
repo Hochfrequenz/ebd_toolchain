@@ -2,6 +2,7 @@
 tests the main script
 """
 
+import json
 from pathlib import Path
 from typing import Literal
 
@@ -37,3 +38,8 @@ def test_main(
     # in the repo root
     _main(input_path, tmp_path, export_types)
     # we don't assert on the results but instead just check that it doesn't crash
+    json_files = list(tmp_path.glob("*.json"))
+    for json_file in json_files:
+        assert json_file.exists()
+        with open(json_file, "r", encoding="utf-8") as f:
+            _ = json.load(f)  # must be valid json
