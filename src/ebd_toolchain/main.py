@@ -139,9 +139,10 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             converter = DocxTableConverter(
                 docx_tables,
                 ebd_key=ebd_key,
+                ebd_name=ebd_key,  # todo: use real ebd_name, this is just a placeholder for now
                 chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
                 # pylint:disable=line-too-long
-                sub_chapter=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
+                section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
             )
             ebd_table = converter.convert_docx_tables_to_ebd_table()
         except Exception as scraping_error:  # pylint:disable=broad-except
