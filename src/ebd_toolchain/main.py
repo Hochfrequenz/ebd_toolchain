@@ -157,7 +157,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             if "json" in export_types:
                 ebd_meta_data = EbdTableMetaData(
                     ebd_code=ebd_key,
-                    ebd_name=f"{ebd_kapitel.subsection_title}",
+                    ebd_name=ebd_kapitel.subsection_title,
                     chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
@@ -173,8 +173,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             converter = DocxTableConverter(
                 docx_tables,
                 ebd_key=ebd_key,
-                # pylint: disable=fixme
-                ebd_name=ebd_key,  # todo: use real ebd_name, this is just a placeholder for now
+                ebd_name=ebd_kapitel.subsection_title,
                 chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
                 # pylint:disable=line-too-long
                 section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
