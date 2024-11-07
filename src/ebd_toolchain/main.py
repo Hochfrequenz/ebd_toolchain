@@ -139,6 +139,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             converter = DocxTableConverter(
                 docx_tables,
                 ebd_key=ebd_key,
+                # pylint: disable=fixme
                 ebd_name=ebd_key,  # todo: use real ebd_name, this is just a placeholder for now
                 chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
                 # pylint:disable=line-too-long
