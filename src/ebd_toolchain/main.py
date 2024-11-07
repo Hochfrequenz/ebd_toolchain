@@ -114,6 +114,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
     """
     _main(input_path, output_path, export_types)
 
+
 # pylint:disable=too-many-locals, too-many-branches, too-many-statements,
 def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
     """same as main but without the click decorators"""
