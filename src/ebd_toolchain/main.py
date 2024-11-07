@@ -113,6 +113,11 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
     """
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
+    _main(input_path, output_path, export_types)
+
+
+def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
+    """same as main but without the click decorators"""
     settings = Settings()  # type:ignore[call-arg]
     # read settings from environment variable/.env file
     kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
@@ -195,6 +200,9 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             # e.g. AssertionError: If indegree > 1, the number of paths should always be greater than 1 too.
             click.secho(str(assertion_error), fg="red")
             # both the SVG and dot path require graphviz to work, hence the common error handling block
+        except Exception as unknown_error:
+            click.secho(str(unknown_error), fg="red")
+            continue
     click.secho(json.dumps({str(k): v for k, v in error_sources.items()}, indent=4))
     click.secho("🏁Finished")
 
