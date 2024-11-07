@@ -30,7 +30,7 @@ from typing import Literal
 
 import cattrs
 import click
-from ebdamame import TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables, EbdNoTableSection
+from ebdamame import EbdNoTableSection, TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
