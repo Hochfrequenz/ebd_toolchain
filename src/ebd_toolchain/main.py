@@ -24,12 +24,13 @@ A small click-based script to extract all EBDs from a given .docx file (availabl
 # where scrape_and_graph is just a placeholder/link to the main.py file as defined in the pyproject.toml scripts section
 
 import json
+import logging
 from pathlib import Path
 from typing import Literal
 
 import cattrs
 import click
-from ebdamame import TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
+from ebdamame import EbdNoTableSection, TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -47,6 +48,8 @@ from rebdhuhn.models.errors import (
     PathsNotGreaterThanOneError,
 )
 from rebdhuhn.plantuml import convert_graph_to_plantuml
+
+_logger = logging.getLogger(__name__)
 
 
 # pylint:disable=too-few-public-methods
@@ -135,13 +138,18 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
             click.secho(f"Table not found: {ebd_key}: {str(table_not_found_error)}; Skip!", fg="yellow")
             continue
         assert ebd_kapitel is not None
+        if isinstance(docx_tables, EbdNoTableSection):
+            _logger.warning("The EBD has no table: %s", ebd_key)
+            continue
         try:
             converter = DocxTableConverter(
                 docx_tables,
                 ebd_key=ebd_key,
+                # pylint: disable=fixme
+                ebd_name=ebd_key,  # todo: use real ebd_name, this is just a placeholder for now
                 chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
                 # pylint:disable=line-too-long
-                sub_chapter=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
+                section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
             )
             ebd_table = converter.convert_docx_tables_to_ebd_table()
         except Exception as scraping_error:  # pylint:disable=broad-except
