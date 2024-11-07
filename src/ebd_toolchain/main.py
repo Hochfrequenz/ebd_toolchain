@@ -108,14 +108,13 @@ def _dump_json(json_path: Path, ebd_table: EbdTable) -> None:
     multiple=True,
     help="Choose which file you'd like to create",
 )
-# pylint:disable=too-many-locals, too-many-branches, too-many-statements,
 def main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
     """
     A program to get a machine-readable version of the AHBs docx files published by edi@energy.
     """
     _main(input_path, output_path, export_types)
 
-
+# pylint:disable=too-many-locals, too-many-branches, too-many-statements,
 def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
     """same as main but without the click decorators"""
     settings = Settings()  # type:ignore[call-arg]
