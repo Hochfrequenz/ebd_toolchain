@@ -38,7 +38,7 @@ from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
 from rebdhuhn.kroki import DotToSvgConverter, Kroki, KrokiDotBadRequestError, KrokiPlantUmlBadRequestError
 from rebdhuhn.models.ebd_graph import EbdGraph
-from rebdhuhn.models.ebd_table import EbdTable
+from rebdhuhn.models.ebd_table import EbdTable, EbdTableMetaData
 from rebdhuhn.models.errors import (
     EbdCrossReferenceNotSupportedError,
     EndeInWrongColumnError,
@@ -80,7 +80,7 @@ def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter)
         svg_file.write(svg_code)
 
 
-def _dump_json(json_path: Path, ebd_table: EbdTable | EbdNoTableSection) -> None:
+def _dump_json(json_path: Path, ebd_table: EbdTable | EbdTableMetaData) -> None:
     with open(json_path, "w+", encoding="utf-8") as json_file:
         json.dump(cattrs.unstructure(ebd_table), json_file, ensure_ascii=False, indent=2, sort_keys=True)
 
