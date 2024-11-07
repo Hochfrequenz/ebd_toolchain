@@ -147,7 +147,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             if "json" in export_types:
                 ebd_meta_data = EbdTableMetaData(
                     ebd_code=ebd_key,
-                    ebd_name=ebd_kapitel.section_title,
+                    ebd_name=f"{ebd_kapitel.subsection_title}",
                     chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
@@ -158,6 +158,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 _dump_json(json_path, ebd_meta_data)
                 click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
         try:
+            assert not isinstance(docx_tables, EbdNoTableSection)
             converter = DocxTableConverter(
                 docx_tables,
                 ebd_key=ebd_key,
