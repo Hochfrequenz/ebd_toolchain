@@ -32,5 +32,8 @@ def test_main(
 ) -> None:
     monkeypatch.setenv("KROKI_PORT", "8000")
     monkeypatch.setenv("KROKI_HOST", "localhost")
+    # if you run into ConnectionErrors use
+    # docker-compose up -d
+    # in the repo root
     _main(input_path, tmp_path, export_types)
     # we don't assert on the results but instead just check that it doesn't crash
