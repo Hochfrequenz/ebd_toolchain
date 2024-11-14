@@ -34,7 +34,7 @@ from ebdamame import EbdNoTableSection, TableNotFoundError, get_all_ebd_keys, ge
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from rebdhuhn.graph_conversion import convert_table_to_graph
+from rebdhuhn.graph_conversion import convert_empty_table_to_graph, convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
 from rebdhuhn.kroki import DotToSvgConverter, Kroki, KrokiDotBadRequestError, KrokiPlantUmlBadRequestError
 from rebdhuhn.models.ebd_graph import EbdGraph
@@ -154,19 +154,46 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         assert ebd_kapitel is not None
         assert ebd_kapitel.subsection_title is not None
         if isinstance(docx_tables, EbdNoTableSection):
+            ebd_meta_data = EbdTableMetaData(
+                ebd_code=ebd_key,
+                ebd_name=ebd_kapitel.subsection_title,
+                chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
+                # pylint:disable=line-too-long
+                section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
+                role="N/A",
+                remark=docx_tables.remark,
+            )
             if "json" in export_types:
-                ebd_meta_data = EbdTableMetaData(
-                    ebd_code=ebd_key,
-                    ebd_name=ebd_kapitel.subsection_title,
-                    chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
-                    # pylint:disable=line-too-long
-                    section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
-                    role="N/A",
-                    remark=docx_tables.remark,
-                )
                 json_path = output_path / Path(f"{ebd_key}.json")
                 _dump_json(json_path, ebd_meta_data)
                 click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
+            try:
+                ebd_graph = convert_empty_table_to_graph(ebd_meta_data)
+            except (
+                EbdCrossReferenceNotSupportedError,
+                EndeInWrongColumnError,
+                OutcomeCodeAmbiguousError,
+            ) as known_issue:
+                handle_known_error(known_issue, ebd_key)
+                continue
+            except Exception as unknown_error:  # pylint:disable=broad-except
+                click.secho(f"Error while graphing {ebd_key}: {str(unknown_error)}; Skip!", fg="red")
+                continue
+            try:
+                if "dot" in export_types:
+                    dot_path = output_path / Path(f"{ebd_key}.dot")
+                    _dump_dot(dot_path, ebd_graph)
+                    click.secho(f"💾 Successfully exported '{ebd_key}.dot' to {dot_path.absolute()}")
+                if "svg" in export_types:
+                    svg_path = output_path / Path(f"{ebd_key}.svg")
+                    _dump_svg(svg_path, ebd_graph, kroki_client)
+                    click.secho(f"💾 Successfully exported '{ebd_key}.svg' to {svg_path.absolute()}")
+            except (PathsNotGreaterThanOneError, KrokiDotBadRequestError) as known_issue:
+                handle_known_error(known_issue, ebd_key)
+            except AssertionError as assertion_error:
+                # e.g. AssertionError: If indegree > 1, the number of paths should always be greater than 1 too.
+                click.secho(str(assertion_error), fg="red")
+                # both the SVG and dot path require graphviz to work, hence the common error handling block
             continue
         try:
             assert not isinstance(docx_tables, EbdNoTableSection)
