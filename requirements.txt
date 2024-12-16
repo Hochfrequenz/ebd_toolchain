@@ -38,7 +38,7 @@ more-itertools==10.5.0
     # via ebdamame
 networkx==3.4.2
     # via rebdhuhn
-pydantic==2.9.2
+pydantic==2.10.3
     # via pydantic-settings
 pydantic-core==2.23.4
     # via pydantic
