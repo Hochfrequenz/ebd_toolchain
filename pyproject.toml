@@ -33,7 +33,7 @@ linting = ["pylint==3.3.2"]
 spellcheck = ["codespell==2.3.0"]
 test_packaging = ["build==1.2.2.post1", "twine==6.0.1"]
 tests = ["pytest==8.3.4"]
-type_check = ["mypy==1.14.0"]
+type_check = ["mypy==1.14.1"]
 
 [project.urls]
 Changelog = "https://github.com/Hochfrequenz/ebd_toolchain/releases"
