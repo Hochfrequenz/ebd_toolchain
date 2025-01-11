@@ -15,9 +15,10 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "ebdamame>=0.4.0",
+    "ebdamame>=0.4.1",
     "rebdhuhn>=0.8.0",
     "cattrs",
     "click",
