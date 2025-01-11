@@ -15,9 +15,10 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "ebdamame>=0.4.0",
+    "ebdamame>=0.4.1",
     "rebdhuhn>=0.8.0",
     "cattrs",
     "click",
@@ -41,7 +42,7 @@ Homepage = "https://github.com/Hochfrequenz/ebd_toolchain"
 
 [tool.black]
 line-length = 120
-target_version = ["py311", "py312"]
+target_version = ["py311", "py312", "py313"]
 
 [tool.isort]
 line_length = 120
