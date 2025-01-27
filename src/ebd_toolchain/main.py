@@ -34,7 +34,7 @@ from ebdamame import EbdNoTableSection, TableNotFoundError, get_all_ebd_keys, ge
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from rebdhuhn.graph_conversion import convert_empty_table_to_graph, convert_table_to_graph
+from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
 from rebdhuhn.kroki import DotToSvgConverter, Kroki, KrokiDotBadRequestError, KrokiPlantUmlBadRequestError
 from rebdhuhn.models.ebd_graph import EbdGraph
