@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "ebdamame>=0.4.1",
-    "rebdhuhn>=0.14.0",
+    "rebdhuhn>=0.14.3",
     "cattrs",
     "click",
     "pydantic-settings"
