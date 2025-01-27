@@ -15,10 +15,11 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "ebdamame>=0.4.0",
-    "rebdhuhn>=0.8.0",
+    "ebdamame>=0.4.1",
+    "rebdhuhn>=0.9.0",
     "cattrs",
     "click",
     "pydantic-settings"
@@ -27,13 +28,13 @@ dependencies = [
 dynamic = ["readme", "version"]
 
 [project.optional-dependencies]
-coverage = ["coverage==7.6.7"]
+coverage = ["coverage==7.6.10"]
 formatting = ["black==24.10.0", "isort==5.13.2"]
-linting = ["pylint==3.3.1"]
-spellcheck = ["codespell==2.3.0"]
-test_packaging = ["build==1.2.2.post1", "twine==5.1.1"]
-tests = ["pytest==8.3.3"]
-type_check = ["mypy==1.13.0"]
+linting = ["pylint==3.3.3"]
+spellcheck = ["codespell==2.4.0"]
+test_packaging = ["build==1.2.2.post1", "twine==6.1.0"]
+tests = ["pytest==8.3.4"]
+type_check = ["mypy==1.14.1"]
 
 [project.urls]
 Changelog = "https://github.com/Hochfrequenz/ebd_toolchain/releases"
@@ -41,7 +42,7 @@ Homepage = "https://github.com/Hochfrequenz/ebd_toolchain"
 
 [tool.black]
 line-length = 120
-target_version = ["py311", "py312"]
+target_version = ["py311", "py312", "py313"]
 
 [tool.isort]
 line_length = 120
