@@ -185,22 +185,22 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         if "puml" in export_types:
             if not any(ebd_table.rows):
                 click.secho(f"EBD {ebd_key} has no ebd table; Skip puml creation!", fg="yellow")
-                continue
-            try:
-                puml_path = output_path / Path(f"{ebd_key}.puml")
-                _dump_puml(puml_path, ebd_graph)
-                click.secho(f"💾 Successfully exported '{ebd_key}.puml' to {puml_path.absolute()}")
-            except AssertionError as assertion_error:
-                # https://github.com/Hochfrequenz/rebdhuhn/issues/35
-                click.secho(str(assertion_error), fg="red")
-            except (
-                NotExactlyTwoOutgoingEdgesError,
-                GraphTooComplexForPlantumlError,
-                KrokiPlantUmlBadRequestError,
-            ) as known_issue:
-                handle_known_error(known_issue, ebd_key)
-            except Exception as general_error:  # pylint:disable=broad-exception-caught
-                click.secho(f"Error while exporting {ebd_key} as UML: {str(general_error)}; Skip!", fg="yellow")
+            else:
+                try:
+                    puml_path = output_path / Path(f"{ebd_key}.puml")
+                    _dump_puml(puml_path, ebd_graph)
+                    click.secho(f"💾 Successfully exported '{ebd_key}.puml' to {puml_path.absolute()}")
+                except AssertionError as assertion_error:
+                    # https://github.com/Hochfrequenz/rebdhuhn/issues/35
+                    click.secho(str(assertion_error), fg="red")
+                except (
+                    NotExactlyTwoOutgoingEdgesError,
+                    GraphTooComplexForPlantumlError,
+                    KrokiPlantUmlBadRequestError,
+                ) as known_issue:
+                    handle_known_error(known_issue, ebd_key)
+                except Exception as general_error:  # pylint:disable=broad-exception-caught
+                    click.secho(f"Error while exporting {ebd_key} as UML: {str(general_error)}; Skip!", fg="yellow")
 
         try:
             if "dot" in export_types:
