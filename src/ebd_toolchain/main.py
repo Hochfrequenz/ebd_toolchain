@@ -127,7 +127,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         for item in output_path.iterdir():
             if item.is_file():
                 item.unlink()
-    output_path.mkdir(parents=True)
+    output_path.mkdir(parents=True, exist_ok=True)
     click.secho(f"Created a new directory at {output_path}", fg="green")
     all_ebd_keys = get_all_ebd_keys(input_path)
     error_sources: dict[type, list[str]] = {}
