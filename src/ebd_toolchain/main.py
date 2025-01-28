@@ -25,6 +25,7 @@ A small click-based script to extract all EBDs from a given .docx file (availabl
 
 import json
 import logging
+import shutil
 from pathlib import Path
 from typing import Literal
 
@@ -121,11 +122,11 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     settings = Settings()  # type:ignore[call-arg]
     # read settings from environment variable/.env file
     kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
-    if output_path.exists():
-        click.secho(f"The output directory '{output_path}' exists already.", fg="yellow")
-    else:
-        output_path.mkdir(parents=True)
-        click.secho(f"Created a new directory at {output_path}", fg="green")
+    if output_path.exists() and output_path.is_dir():
+        click.secho(f"The output directory '{output_path}' exists already. Will remove its content.", fg="yellow")
+        shutil.rmtree(output_path)
+    output_path.mkdir(parents=True)
+    click.secho(f"Created a new directory at {output_path}", fg="green")
     all_ebd_keys = get_all_ebd_keys(input_path)
     error_sources: dict[type, list[str]] = {}
 
