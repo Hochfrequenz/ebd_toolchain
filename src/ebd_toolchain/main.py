@@ -45,6 +45,7 @@ from rebdhuhn.models.errors import (
     GraphTooComplexForPlantumlError,
     NotExactlyTwoOutgoingEdgesError,
     OutcomeCodeAmbiguousError,
+    OutcomeCodeAndFurtherStepError,
     PathsNotGreaterThanOneError,
 )
 from rebdhuhn.plantuml import convert_graph_to_plantuml
@@ -138,6 +139,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         error_sources[type(error)].append(ebd_key)
 
     for ebd_key, (ebd_title, ebd_kapitel) in all_ebd_keys.items():
+        # for ebd_key, (ebd_title, ebd_kapitel) in {"E_0267": all_ebd_keys["E_0267"]}.items():
         click.secho(f"Processing EBD {ebd_kapitel} '{ebd_key}' ({ebd_title})")
         try:
             docx_tables = get_ebd_docx_tables(docx_file_path=input_path, ebd_key=ebd_key)
@@ -178,7 +180,12 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
         try:
             ebd_graph = convert_table_to_graph(ebd_table)
-        except (EbdCrossReferenceNotSupportedError, EndeInWrongColumnError, OutcomeCodeAmbiguousError) as known_issue:
+        except (
+            EbdCrossReferenceNotSupportedError,
+            EndeInWrongColumnError,
+            OutcomeCodeAmbiguousError,
+            OutcomeCodeAndFurtherStepError,
+        ) as known_issue:
             handle_known_error(known_issue, ebd_key)
             continue
         except Exception as unknown_error:  # pylint:disable=broad-except
