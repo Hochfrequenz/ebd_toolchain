@@ -40,7 +40,7 @@ networkx==3.4.2
     # via rebdhuhn
 pydantic==2.10.6
     # via pydantic-settings
-pydantic-core==2.27.2
+pydantic-core==2.31.1
     # via pydantic
 pydantic-settings==2.8.1
     # via ebd-toolchain (pyproject.toml)
