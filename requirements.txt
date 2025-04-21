@@ -61,5 +61,5 @@ typing-extensions==4.13.2
     #   pydantic
     #   pydantic-core
     #   python-docx
-urllib3==2.3.0
+urllib3==2.4.0
     # via requests
