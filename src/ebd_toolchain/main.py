@@ -145,6 +145,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             docx_tables = get_ebd_docx_tables(docx_file_path=input_path, ebd_key=ebd_key)
         except TableNotFoundError as table_not_found_error:
             click.secho(f"Table not found: {ebd_key}: {str(table_not_found_error)}; Skip!", fg="yellow")
+            handle_known_error(table_not_found_error, ebd_key)
             continue
         assert ebd_kapitel is not None
         assert ebd_kapitel.subsection_title is not None
@@ -173,6 +174,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
         except Exception as scraping_error:  # pylint:disable=broad-except
             click.secho(f"Error while scraping {ebd_key}: {str(scraping_error)}; Skip!", fg="red")
+            handle_known_error(scraping_error, ebd_key)
             continue
         if "json" in export_types:
             json_path = output_path / Path(f"{ebd_key}.json")
@@ -190,6 +192,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             continue
         except Exception as unknown_error:  # pylint:disable=broad-except
             click.secho(f"Error while graphing {ebd_key}: {str(unknown_error)}; Skip!", fg="red")
+            handle_known_error(unknown_error, ebd_key)
             continue
         if "puml" in export_types:
             if not any(ebd_table.rows):
@@ -202,6 +205,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 except AssertionError as assertion_error:
                     # https://github.com/Hochfrequenz/rebdhuhn/issues/35
                     click.secho(str(assertion_error), fg="red")
+                    handle_known_error(assertion_error, ebd_key)
                 except (
                     NotExactlyTwoOutgoingEdgesError,
                     GraphTooComplexForPlantumlError,
@@ -210,6 +214,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     handle_known_error(known_issue, ebd_key)
                 except Exception as general_error:  # pylint:disable=broad-exception-caught
                     click.secho(f"Error while exporting {ebd_key} as UML: {str(general_error)}; Skip!", fg="yellow")
+                    handle_known_error(general_error, ebd_key)
 
         try:
             if "dot" in export_types:
@@ -225,6 +230,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         except AssertionError as assertion_error:
             # e.g. AssertionError: If indegree > 1, the number of paths should always be greater than 1 too.
             click.secho(str(assertion_error), fg="red")
+            handle_known_error(assertion_error, ebd_key)
             # both the SVG and dot path require graphviz to work, hence the common error handling block
     click.secho(json.dumps({str(k): v for k, v in error_sources.items()}, indent=4))
     click.secho("🏁Finished")
