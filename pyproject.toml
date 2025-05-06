@@ -18,7 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "ebdamame>=0.4.1",
+    "ebdamame>=0.4.2",
     "rebdhuhn>=0.14.6",
     "cattrs",
     "click",
