@@ -38,9 +38,9 @@ more-itertools==10.7.0
     # via ebdamame
 networkx==3.4.2
     # via rebdhuhn
-pydantic==2.10.6
+pydantic==2.11.4
     # via pydantic-settings
-pydantic-core==2.27.2
+pydantic-core==2.33.2
     # via pydantic
 pydantic-settings==2.9.1
     # via ebd-toolchain (pyproject.toml)
@@ -61,5 +61,10 @@ typing-extensions==4.13.2
     #   pydantic
     #   pydantic-core
     #   python-docx
+    #   typing-inspection
+typing-inspection==0.4.0
+    # via
+    #   pydantic
+    #   pydantic-settings
 urllib3==2.4.0
     # via requests
