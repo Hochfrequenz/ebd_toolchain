@@ -48,7 +48,7 @@ python-docx==1.1.2
     # via ebdamame
 python-dotenv==1.1.0
     # via pydantic-settings
-rebdhuhn==0.17.0
+rebdhuhn==0.17.1rc1
     # via
     #   ebd-toolchain (pyproject.toml)
     #   ebdamame
