@@ -71,7 +71,7 @@ And for further information, see the [Tox Repository](https://github.com/tox-dev
 
 ## Contribute
 
-You are very welcome to contribute to this template repository by opening a pull request against the main branch.
+You are very welcome to contribute to this template repository by opening a pull request against the main branch, both here and in rebdhuhn and ebdamame.
 
 ## Related Tools and Context
 
