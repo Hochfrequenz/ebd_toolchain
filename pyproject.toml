@@ -18,8 +18,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "ebdamame>=0.4.2",
-    "rebdhuhn>=0.17.1",
+    "ebdamame>=0.5.1",
+    "rebdhuhn>=0.17.2",
     "cattrs",
     "click",
     "pydantic-settings"
