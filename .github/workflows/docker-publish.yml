@@ -19,7 +19,7 @@ jobs:
           VERSION=$(echo ${GITHUB_REF#refs/tags/})
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Log in to GHCR
-        # the token has repo:write and package scope and expires on 2025-10-08
+        # the token has repo:(read+write) and package(read+write) scope and expires on 2026-05-15
         # https://github.com/Hochfrequenz/ebd_toolchain/settings/secrets/actions/GHCR_PUSH_TOKEN
         run: echo "${{ secrets.GHCR_PUSH_TOKEN }}" | docker login ghcr.io -u hf-kklein --password-stdin
 
