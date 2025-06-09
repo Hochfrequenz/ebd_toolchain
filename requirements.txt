@@ -11,7 +11,7 @@ attrs==25.3.0
     #   cattrs
     #   ebdamame
     #   rebdhuhn
-cattrs==25.1.0
+cattrs==25.1.1
     # via
     #   ebd-toolchain (pyproject.toml)
     #   rebdhuhn
