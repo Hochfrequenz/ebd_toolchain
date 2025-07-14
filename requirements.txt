@@ -29,7 +29,7 @@ ebdamame==0.5.1
     # via ebd-toolchain (pyproject.toml)
 idna==3.10
     # via requests
-lxml==5.4.0
+lxml==6.0.0
     # via
     #   python-docx
     #   rebdhuhn
