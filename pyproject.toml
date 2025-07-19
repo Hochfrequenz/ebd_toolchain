@@ -28,7 +28,7 @@ dependencies = [
 dynamic = ["readme", "version"]
 
 [project.optional-dependencies]
-coverage = ["coverage==7.9.1"]
+coverage = ["coverage==7.9.2"]
 formatting = ["black==25.1.0", "isort==6.0.1"]
 linting = ["pylint==3.3.7"]
 spellcheck = ["codespell==2.4.1"]
