@@ -52,7 +52,7 @@ rebdhuhn==0.17.4
     # via
     #   ebd-toolchain (pyproject.toml)
     #   ebdamame
-requests==2.32.4
+requests==2.32.5
     # via rebdhuhn
 svgutils==0.3.4
     # via rebdhuhn
