@@ -17,7 +17,7 @@ cattrs==25.1.1
     #   rebdhuhn
 certifi==2025.8.3
     # via requests
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 click==8.2.1
     # via
@@ -29,7 +29,7 @@ ebdamame==0.5.1
     # via ebd-toolchain (pyproject.toml)
 idna==3.10
     # via requests
-lxml==6.0.0
+lxml==6.0.1
     # via
     #   python-docx
     #   rebdhuhn
@@ -48,15 +48,15 @@ python-docx==1.2.0
     # via ebdamame
 python-dotenv==1.1.1
     # via pydantic-settings
-rebdhuhn==0.17.3
+rebdhuhn==0.17.4
     # via
     #   ebd-toolchain (pyproject.toml)
     #   ebdamame
-requests==2.32.4
+requests==2.32.5
     # via rebdhuhn
 svgutils==0.3.4
     # via rebdhuhn
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   pydantic
     #   pydantic-core
