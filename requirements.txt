@@ -34,7 +34,7 @@ lxml==6.0.1
     #   python-docx
     #   rebdhuhn
     #   svgutils
-more-itertools==10.7.0
+more-itertools==10.8.0
     # via ebdamame
 networkx==3.5
     # via rebdhuhn
