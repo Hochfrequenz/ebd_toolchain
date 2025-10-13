@@ -38,9 +38,9 @@ more-itertools==10.8.0
     # via ebdamame
 networkx==3.5
     # via rebdhuhn
-pydantic==2.11.10
+pydantic==2.12.0
     # via pydantic-settings
-pydantic-core==2.33.2
+pydantic-core==2.41.1
     # via pydantic
 pydantic-settings==2.11.0
     # via ebd-toolchain (pyproject.toml)
@@ -58,6 +58,7 @@ svgutils==0.3.4
     # via rebdhuhn
 typing-extensions==4.15.0
     # via
+    #   cattrs
     #   pydantic
     #   pydantic-core
     #   python-docx
