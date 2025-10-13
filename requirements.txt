@@ -27,7 +27,7 @@ colorama==0.4.6
     # via click
 ebdamame==0.5.1
     # via ebd-toolchain (pyproject.toml)
-idna==3.10
+idna==3.11
     # via requests
 lxml==6.0.2
     # via
