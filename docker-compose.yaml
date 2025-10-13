@@ -1,6 +1,6 @@
 services:
   kroki:
-    image: yuzutech/kroki:0.24.1
+    image: yuzutech/kroki:0.28.0
     ports:
       - "8000:8000"  # Expose localhost:8000
       # this is required for the test_main.py to directly use kroki
