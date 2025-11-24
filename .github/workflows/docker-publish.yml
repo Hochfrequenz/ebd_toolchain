@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         # with: # we don't need this
         #  submodules: "recursive"
       - name: get version tag
