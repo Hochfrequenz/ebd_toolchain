@@ -154,7 +154,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             handle_known_error(table_not_found_error, ebd_key)
             continue
         except EbdTableNotConvertibleError as not_convertible_error:
-            click.secho(f"Table is invalid: {ebd_key}: {str(table_not_found_error)}; Skip!", fg="yellow")
+            click.secho(f"Table is invalid: {ebd_key}: {str(not_convertible_error)}; Skip!", fg="yellow")
             handle_known_error(table_not_found_error, ebd_key)
             continue
         assert ebd_kapitel is not None
