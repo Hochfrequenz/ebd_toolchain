@@ -30,7 +30,13 @@ from typing import Literal
 
 import cattrs
 import click
-from ebdamame import EbdNoTableSection, TableNotFoundError, get_all_ebd_keys, get_ebd_docx_tables
+from ebdamame import (
+    EbdNoTableSection,
+    EbdTableNotConvertibleError,
+    TableNotFoundError,
+    get_all_ebd_keys,
+    get_ebd_docx_tables,
+)
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -146,6 +152,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         except TableNotFoundError as table_not_found_error:
             click.secho(f"Table not found: {ebd_key}: {str(table_not_found_error)}; Skip!", fg="yellow")
             handle_known_error(table_not_found_error, ebd_key)
+            continue
+        except EbdTableNotConvertibleError as not_convertible_error:
+            click.secho(f"Table is invalid: {ebd_key}: {str(not_convertible_error)}; Skip!", fg="yellow")
+            handle_known_error(not_convertible_error, ebd_key)
             continue
         assert ebd_kapitel is not None
         assert ebd_kapitel.subsection_title is not None

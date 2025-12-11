@@ -25,7 +25,7 @@ click==8.3.1
     #   ebdamame
 colorama==0.4.6
     # via click
-ebdamame==0.5.2
+ebdamame==0.6.0
     # via ebd-toolchain (pyproject.toml)
 idna==3.11
     # via requests
