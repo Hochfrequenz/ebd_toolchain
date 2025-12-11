@@ -36,7 +36,7 @@ lxml==6.0.2
     #   svgutils
 more-itertools==10.8.0
     # via ebdamame
-networkx==3.6
+networkx==3.6.1
     # via rebdhuhn
 pydantic==2.12.0
     # via pydantic-settings
