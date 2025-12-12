@@ -28,7 +28,6 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-import cattrs
 import click
 from ebdamame import (
     EbdNoTableSection,
@@ -89,7 +88,7 @@ def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter)
 
 def _dump_json(json_path: Path, ebd_table: EbdTable | EbdTableMetaData) -> None:
     with open(json_path, "w+", encoding="utf-8") as json_file:
-        json.dump(cattrs.unstructure(ebd_table), json_file, ensure_ascii=False, indent=2, sort_keys=True)
+        json.dump(ebd_table.model_dump(mode="json"), json_file, ensure_ascii=False, indent=2, sort_keys=True)
 
 
 @click.command()
