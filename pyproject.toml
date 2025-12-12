@@ -19,9 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "ebdamame>=0.6.0",
-    "rebdhuhn>=0.17.3",
-    "cattrs",
+    "ebdamame>=0.8.0",
+    "rebdhuhn>=0.18.1",
     "click",
     "pydantic-settings"
     # add all the dependencies here
