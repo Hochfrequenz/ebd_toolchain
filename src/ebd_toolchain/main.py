@@ -28,7 +28,6 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-import cattrs
 import click
 from ebdamame import (
     EbdNoTableSection,
@@ -89,7 +88,7 @@ def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter)
 
 def _dump_json(json_path: Path, ebd_table: EbdTable | EbdTableMetaData) -> None:
     with open(json_path, "w+", encoding="utf-8") as json_file:
-        json.dump(cattrs.unstructure(ebd_table), json_file, ensure_ascii=False, indent=2, sort_keys=True)
+        json.dump(ebd_table.model_dump(mode="json"), json_file, ensure_ascii=False, indent=2, sort_keys=True)
 
 
 @click.command()
@@ -168,7 +167,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                     role="N/A",
-                    remark=docx_tables.remark,
+                    remark=docx_tables.remark,  # pylint:disable=no-member
                 )
                 ebd_table = EbdTable(metadata=ebd_meta_data, rows=[])
 

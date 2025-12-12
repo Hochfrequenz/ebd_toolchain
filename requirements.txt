@@ -25,7 +25,7 @@ click==8.3.1
     #   ebdamame
 colorama==0.4.6
     # via click
-ebdamame==0.6.0
+ebdamame==0.8.0
     # via ebd-toolchain (pyproject.toml)
 idna==3.11
     # via requests
@@ -48,7 +48,7 @@ python-docx==1.2.0
     # via ebdamame
 python-dotenv==1.2.1
     # via pydantic-settings
-rebdhuhn==0.17.5
+rebdhuhn==0.18.1
     # via
     #   ebd-toolchain (pyproject.toml)
     #   ebdamame
