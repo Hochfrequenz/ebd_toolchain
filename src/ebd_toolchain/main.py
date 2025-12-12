@@ -167,7 +167,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                     role="N/A",
-                    remark=docx_tables.remark,
+                    remark=docx_tables.remark,  # pylint:disable=no-member
                 )
                 ebd_table = EbdTable(metadata=ebd_meta_data, rows=[])
 
