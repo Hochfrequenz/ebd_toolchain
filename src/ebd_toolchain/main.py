@@ -25,6 +25,7 @@ A small click-based script to extract all EBDs from a given .docx file (availabl
 
 import json
 import logging
+from enum import Enum
 from pathlib import Path
 from typing import Literal
 
@@ -41,21 +42,24 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
-from rebdhuhn.kroki import DotToSvgConverter, Kroki, KrokiDotBadRequestError, KrokiPlantUmlBadRequestError
+from rebdhuhn.kroki import DotToSvgConverter, Kroki
 from rebdhuhn.models.ebd_graph import EbdGraph
 from rebdhuhn.models.ebd_table import EbdTable, EbdTableMetaData
-from rebdhuhn.models.errors import (
-    EbdCrossReferenceNotSupportedError,
-    EndeInWrongColumnError,
-    GraphTooComplexForPlantumlError,
-    NotExactlyTwoOutgoingEdgesError,
-    OutcomeCodeAmbiguousError,
-    OutcomeCodeAndFurtherStepError,
-    PathsNotGreaterThanOneError,
-)
+from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError, SvgConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
 _logger = logging.getLogger(__name__)
+
+
+class ErrorCategory(Enum):
+    """Categories for classifying errors by pipeline stage and severity."""
+
+    # Errors (critical - affect primary outputs)
+    SCRAPING = "ERROR:scraping"
+    GRAPH_CONVERSION = "ERROR:graph_conversion"
+    SVG_EXPORT = "ERROR:svg_export"
+    # Warnings (non-critical - only affect secondary outputs)
+    PUML_EXPORT = "WARNING:puml_export"
 
 
 # pylint:disable=too-few-public-methods
@@ -135,13 +139,16 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     output_path.mkdir(parents=True, exist_ok=True)
     click.secho(f"Created a new directory at {output_path}", fg="green")
     all_ebd_keys = get_all_ebd_keys(input_path)
-    error_sources: dict[type, list[str]] = {}
+    error_sources: dict[str, list[str]] = {}
 
-    def handle_known_error(error: Exception, ebd_key: str) -> None:
-        click.secho(f"Error while processing EBD {ebd_key}: {error}", fg="yellow")
-        if type(error) not in error_sources:
-            error_sources[type(error)] = []
-        error_sources[type(error)].append(ebd_key)
+    def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory) -> None:
+        color = "yellow" if category == ErrorCategory.PUML_EXPORT else "red"
+        click.secho(f"{category.value}: {ebd_key}: {error}", fg=color)
+        error_type_name = type(error).__name__
+        key = f"[{category.value}] {error_type_name}"
+        if key not in error_sources:
+            error_sources[key] = []
+        error_sources[key].append(ebd_key)
 
     for ebd_key, (ebd_title, ebd_kapitel) in all_ebd_keys.items():
         # for ebd_key, (ebd_title, ebd_kapitel) in {"E_0267": all_ebd_keys["E_0267"]}.items():
@@ -149,12 +156,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         try:
             docx_tables = get_ebd_docx_tables(docx_file_path=input_path, ebd_key=ebd_key)
         except TableNotFoundError as table_not_found_error:
-            click.secho(f"Table not found: {ebd_key}: {str(table_not_found_error)}; Skip!", fg="yellow")
-            handle_known_error(table_not_found_error, ebd_key)
+            handle_known_error(table_not_found_error, ebd_key, ErrorCategory.SCRAPING)
             continue
         except EbdTableNotConvertibleError as not_convertible_error:
-            click.secho(f"Table is invalid: {ebd_key}: {str(not_convertible_error)}; Skip!", fg="yellow")
-            handle_known_error(not_convertible_error, ebd_key)
+            handle_known_error(not_convertible_error, ebd_key, ErrorCategory.SCRAPING)
             continue
         assert ebd_kapitel is not None
         assert ebd_kapitel.subsection_title is not None
@@ -182,8 +187,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 )
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
         except Exception as scraping_error:  # pylint:disable=broad-except
-            click.secho(f"Error while scraping {ebd_key}: {str(scraping_error)}; Skip!", fg="red")
-            handle_known_error(scraping_error, ebd_key)
+            handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING)
             continue
         if "json" in export_types:
             json_path = output_path / Path(f"{ebd_key}.json")
@@ -191,17 +195,11 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             click.secho(f"💾 Successfully exported '{ebd_key}.json' to {json_path.absolute()}")
         try:
             ebd_graph = convert_table_to_graph(ebd_table)
-        except (
-            EbdCrossReferenceNotSupportedError,
-            EndeInWrongColumnError,
-            OutcomeCodeAmbiguousError,
-            OutcomeCodeAndFurtherStepError,
-        ) as known_issue:
-            handle_known_error(known_issue, ebd_key)
+        except GraphConversionError as graph_error:
+            handle_known_error(graph_error, ebd_key, ErrorCategory.GRAPH_CONVERSION)
             continue
         except Exception as unknown_error:  # pylint:disable=broad-except
-            click.secho(f"Error while graphing {ebd_key}: {str(unknown_error)}; Skip!", fg="red")
-            handle_known_error(unknown_error, ebd_key)
+            handle_known_error(unknown_error, ebd_key, ErrorCategory.GRAPH_CONVERSION)
             continue
         if "puml" in export_types:
             if not any(ebd_table.rows):
@@ -211,19 +209,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     puml_path = output_path / Path(f"{ebd_key}.puml")
                     _dump_puml(puml_path, ebd_graph)
                     click.secho(f"💾 Successfully exported '{ebd_key}.puml' to {puml_path.absolute()}")
-                except AssertionError as assertion_error:
-                    # https://github.com/Hochfrequenz/rebdhuhn/issues/35
-                    click.secho(str(assertion_error), fg="red")
-                    handle_known_error(assertion_error, ebd_key)
-                except (
-                    NotExactlyTwoOutgoingEdgesError,
-                    GraphTooComplexForPlantumlError,
-                    KrokiPlantUmlBadRequestError,
-                ) as known_issue:
-                    handle_known_error(known_issue, ebd_key)
-                except Exception as general_error:  # pylint:disable=broad-exception-caught
-                    click.secho(f"Error while exporting {ebd_key} as UML: {str(general_error)}; Skip!", fg="yellow")
-                    handle_known_error(general_error, ebd_key)
+                except PlantumlConversionError as puml_error:
+                    handle_known_error(puml_error, ebd_key, ErrorCategory.PUML_EXPORT)
+                except (AssertionError, Exception) as general_error:  # pylint:disable=broad-exception-caught
+                    handle_known_error(general_error, ebd_key, ErrorCategory.PUML_EXPORT)
 
         try:
             if "dot" in export_types:
@@ -234,14 +223,14 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 svg_path = output_path / Path(f"{ebd_key}.svg")
                 _dump_svg(svg_path, ebd_graph, kroki_client)
                 click.secho(f"💾 Successfully exported '{ebd_key}.svg' to {svg_path.absolute()}")
-        except (PathsNotGreaterThanOneError, KrokiDotBadRequestError) as known_issue:
-            handle_known_error(known_issue, ebd_key)
-        except AssertionError as assertion_error:
-            # e.g. AssertionError: If indegree > 1, the number of paths should always be greater than 1 too.
-            click.secho(str(assertion_error), fg="red")
-            handle_known_error(assertion_error, ebd_key)
+        except SvgConversionError as svg_error:
+            handle_known_error(svg_error, ebd_key, ErrorCategory.SVG_EXPORT)
+        except (AssertionError, Exception) as general_error:  # pylint:disable=broad-exception-caught
             # both the SVG and dot path require graphviz to work, hence the common error handling block
-    click.secho(json.dumps({str(k): v for k, v in error_sources.items()}, indent=4))
+            handle_known_error(general_error, ebd_key, ErrorCategory.SVG_EXPORT)
+    # Sort: ERRORs first, then WARNINGs
+    sorted_errors = dict(sorted(error_sources.items(), key=lambda x: (x[0].startswith("[WARNING"), x[0])))
+    click.secho(json.dumps(sorted_errors, indent=4))
     click.secho("🏁Finished")
 
 
