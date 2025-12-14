@@ -78,13 +78,15 @@ def _dump_puml(puml_path: Path, ebd_graph: EbdGraph) -> None:
 
 
 def _dump_dot(dot_path: Path, ebd_graph: EbdGraph) -> None:
-    dot_code = convert_graph_to_dot(ebd_graph)
+    dot_code = convert_graph_to_dot(ebd_graph, ebd_link_template="?ebd={ebd_code}")
+    # the ?ebd=... relative link should work on ebd.hochfrequenz.de... hopefully
+    # my expectation is, that this link target simply replaces the set query parameter
     with open(dot_path, "w+", encoding="utf-8") as uml_file:
         uml_file.write(dot_code)
 
 
 def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter) -> None:
-    dot_code = convert_graph_to_dot(ebd_graph)
+    dot_code = convert_graph_to_dot(ebd_graph, ebd_link_template="?ebd={ebd_code}")
     svg_code = convert_dot_to_svg_kroki(dot_code, converter)
     with open(svg_path, "w+", encoding="utf-8") as svg_file:
         svg_file.write(svg_code)
