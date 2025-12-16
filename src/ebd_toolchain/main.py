@@ -87,7 +87,7 @@ def _dump_dot(dot_path: Path, ebd_graph: EbdGraph) -> None:
 
 def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter) -> None:
     dot_code = convert_graph_to_dot(ebd_graph, ebd_link_template="?ebd={ebd_code}")
-    svg_code = convert_dot_to_svg_kroki(dot_code, converter)
+    svg_code = convert_dot_to_svg_kroki(dot_code, converter, release_info=ebd_graph.metadata.release_information)
     with open(svg_path, "w+", encoding="utf-8") as svg_file:
         svg_file.write(svg_code)
 
