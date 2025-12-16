@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 authors = [{ name = "Hochfrequenz Unternehmensberatung GmbH", email = "info+github@hochfrequenz.de" }]
 keywords = ["EBD", "rebdhuhn", "ebdamame", "scraping", "python-docx", "kroki", "entscheidungsbaumdiagramm"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -19,8 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "ebdamame>=0.8.0",
-    "rebdhuhn>=0.18.5",
+    "ebdamame>=1.0.0",
+    "rebdhuhn>=1.0.0",
     "click",
     "pydantic-settings"
     # add all the dependencies here
