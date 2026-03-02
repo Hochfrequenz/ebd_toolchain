@@ -40,7 +40,7 @@ pydantic-settings==2.13.1
     # via ebd-toolchain (pyproject.toml)
 python-docx==1.2.0
     # via ebdamame
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via pydantic-settings
 rebdhuhn==1.0.1
     # via
