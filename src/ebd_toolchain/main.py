@@ -130,7 +130,7 @@ def main(input_path: Path, output_path: Path, export_types: list[Literal["puml",
 # pylint:disable=too-many-locals, too-many-branches, too-many-statements,
 def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
     """same as main but without the click decorators"""
-    settings = Settings()  # type:ignore[call-arg]
+    settings = Settings()  # type: ignore[call-arg]
     # read settings from environment variable/.env file
     kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
     if output_path.exists() and output_path.is_dir():
@@ -170,7 +170,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 ebd_meta_data = EbdTableMetaData(
                     ebd_code=ebd_key,
                     ebd_name=ebd_kapitel.subsection_title,
-                    chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
+                    chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                     role="N/A",
@@ -183,7 +183,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     docx_tables,
                     ebd_key=ebd_key,
                     ebd_name=ebd_kapitel.subsection_title,
-                    chapter=ebd_kapitel.chapter_title,  # type:ignore[arg-type]
+                    chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                 )
