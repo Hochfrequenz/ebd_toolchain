@@ -164,12 +164,12 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             handle_known_error(not_convertible_error, ebd_key, ErrorCategory.SCRAPING)
             continue
         assert ebd_kapitel is not None
-        assert ebd_kapitel.subsection_title is not None
+        ebd_name = ebd_kapitel.subsection_title or ebd_title
         try:
             if isinstance(docx_tables, EbdNoTableSection):
                 ebd_meta_data = EbdTableMetaData(
                     ebd_code=ebd_key,
-                    ebd_name=ebd_kapitel.subsection_title,
+                    ebd_name=ebd_name,
                     chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
@@ -182,7 +182,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 converter = DocxTableConverter(
                     docx_tables,
                     ebd_key=ebd_key,
-                    ebd_name=ebd_kapitel.subsection_title,
+                    ebd_name=ebd_name,
                     chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
                     # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
