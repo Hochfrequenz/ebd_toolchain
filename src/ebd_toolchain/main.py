@@ -48,7 +48,7 @@ from rebdhuhn.models.ebd_table import EbdPruefidentifikator, EbdTable, EbdTableM
 from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError, SvgConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
-from .ahb_pruefi import download_ahb_db, get_ebd_to_pruefis_mapping
+from ebd_toolchain.ahb_pruefi import download_ahb_db, get_ebd_to_pruefis_mapping
 
 _logger = logging.getLogger(__name__)
 
