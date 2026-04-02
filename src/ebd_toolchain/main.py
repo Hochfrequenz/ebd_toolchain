@@ -38,7 +38,7 @@ from ebdamame import (
     get_ebd_docx_tables,
 )
 from ebdamame.docxtableconverter import DocxTableConverter
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
@@ -74,6 +74,14 @@ class Settings(BaseSettings):
     github_token: Optional[str] = Field(default=None, alias="GITHUB_TOKEN")
     format_version: Optional[str] = Field(default=None, alias="FORMAT_VERSION")
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("ahb_db_path", "github_token", "format_version", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v: object) -> object:
+        """Treat empty strings from .env files as None."""
+        if v == "":
+            return None
+        return v
 
 
 def _dump_puml(puml_path: Path, ebd_graph: EbdGraph) -> None:
