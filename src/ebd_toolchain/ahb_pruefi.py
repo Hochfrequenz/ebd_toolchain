@@ -91,7 +91,9 @@ def get_ebd_to_pruefis_mapping(
     """
     engine = create_engine(f"sqlite:///{db_path}")
 
-    # GLOB is natively supported in SQLite (unlike REGEXP which needs a UDF)
+    # We use GLOB instead of REGEXP because SQLite does not ship a built-in REGEXP implementation.
+    # REGEXP requires a user-defined function registered on the connection, which sqlmodel/sqlalchemy don't do.
+    # GLOB supports character classes natively: [0-9] matches a single digit.
     sql = """
         SELECT format_version,
                qualifier AS ebd_key,
