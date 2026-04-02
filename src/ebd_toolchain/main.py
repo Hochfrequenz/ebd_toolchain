@@ -70,12 +70,15 @@ class Settings(BaseSettings):
 
     kroki_port: int = Field(alias="KROKI_PORT")
     kroki_host: str = Field(alias="KROKI_HOST")
-    ahb_db_path: Optional[Path] = Field(default=None, alias="AHB_DB_PATH")
-    github_token: Optional[str] = Field(default=None, alias="GITHUB_TOKEN")
+    github_token: Optional[str] = Field(
+        default=None,
+        alias="GITHUB_TOKEN",
+        description="GitHub token to download AHB DB from Hochfrequenz/xml-migs-and-ahbs releases",
+    )
     format_version: Optional[str] = Field(default=None, alias="FORMAT_VERSION")
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    @field_validator("ahb_db_path", "github_token", "format_version", mode="before")
+    @field_validator("github_token", "format_version", mode="before")
     @classmethod
     def empty_str_to_none(cls, v: object) -> object:
         """Treat empty strings from .env files as None."""
@@ -154,15 +157,12 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
 
     # Load EBD-to-Pruefidentifikator mapping from AHB database (if available)
     ebd_to_pruefis: dict[str, list[EbdPruefidentifikator]] = {}
-    if settings.ahb_db_path or settings.github_token:
-        db_path = settings.ahb_db_path
-        if db_path is None and settings.github_token is not None:
-            click.secho("Downloading AHB database from xml-migs-and-ahbs...", fg="cyan")
-            db_path = download_ahb_db(settings.github_token)
-        if db_path is not None:
-            click.secho(f"Loading EBD-to-Prüfi mapping from {db_path} (format_version={settings.format_version})")
-            ebd_to_pruefis = get_ebd_to_pruefis_mapping(db_path, format_version=settings.format_version)
-            click.secho(f"Loaded Prüfi mapping for {len(ebd_to_pruefis)} EBDs", fg="green")
+    if settings.github_token:
+        click.secho("Downloading AHB database from xml-migs-and-ahbs...", fg="cyan")
+        db_path = download_ahb_db(settings.github_token)
+        click.secho(f"Loading EBD-to-Prüfi mapping from {db_path} (format_version={settings.format_version})")
+        ebd_to_pruefis = get_ebd_to_pruefis_mapping(db_path, format_version=settings.format_version)
+        click.secho(f"Loaded Prüfi mapping for {len(ebd_to_pruefis)} EBDs", fg="green")
     if output_path.exists() and output_path.is_dir():
         click.secho(f"The output directory '{output_path}' exists already. Will remove its content.", fg="yellow")
         for item in output_path.iterdir():
