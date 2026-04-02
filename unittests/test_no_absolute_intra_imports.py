@@ -15,7 +15,7 @@ def test_dockerfile_has_pythonpath() -> None:
     """Ensure Dockerfile sets PYTHONPATH so intra-package imports work."""
     dockerfile = Path(__file__).parent.parent / "Dockerfile"
     content = dockerfile.read_text(encoding="utf-8")
-    assert "PYTHONPATH" in content, (
+    assert "ENV PYTHONPATH=/app" in content, (
         "Dockerfile must set ENV PYTHONPATH=/app so that "
         "`from ebd_toolchain.ahb_pruefi import ...` works when main.py is run as a script."
     )
