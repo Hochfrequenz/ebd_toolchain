@@ -13,16 +13,24 @@ from pathlib import Path
 _PACKAGE_DIR = Path(__file__).parent.parent / "src" / "ebd_toolchain"
 
 
+def _is_absolute_intra_package(module_name: str) -> bool:
+    return module_name == "ebd_toolchain" or module_name.startswith("ebd_toolchain.")
+
+
 def test_no_absolute_intra_package_imports() -> None:
     """Ensure all intra-package imports use relative syntax."""
     violations: list[str] = []
-    for py_file in _PACKAGE_DIR.glob("*.py"):
-        tree = ast.parse(py_file.read_text())
+    for py_file in _PACKAGE_DIR.rglob("*.py"):
+        tree = ast.parse(py_file.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            if isinstance(node, (ast.Import, ast.ImportFrom)):
-                module = getattr(node, "module", None) or ""
-                if module.startswith("ebd_toolchain.") or module == "ebd_toolchain":
-                    violations.append(f"{py_file.name}:{node.lineno} — `{ast.dump(node)}` should use a relative import")
+            if isinstance(node, ast.ImportFrom) and node.module and _is_absolute_intra_package(node.module):
+                violations.append(f"{py_file.name}:{node.lineno} — `from {node.module} import ...` should be relative")
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if _is_absolute_intra_package(alias.name):
+                        violations.append(
+                            f"{py_file.name}:{node.lineno} — `import {alias.name}` should be a relative import"
+                        )
 
     assert not violations, (
         "Absolute intra-package imports break the Docker build "
