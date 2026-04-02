@@ -66,6 +66,7 @@ def download_ahb_db(github_token: str, target_dir: Path | None = None) -> Path:
     # Extract the .7z archive
     with py7zr.SevenZipFile(archive_path, mode="r") as archive:
         archive.extractall(path=target_dir)
+    archive_path.unlink()
 
     # Find the extracted .db file
     db_files = list(target_dir.glob("*.db"))
@@ -90,11 +91,14 @@ def get_ebd_to_pruefis_mapping(
     """
     engine = create_engine(f"sqlite:///{db_path}")
 
-    stmt = select(
-        AhbTabellenLine.qualifier,
-        AhbTabellenLine.pruefidentifikator,
-        AhbTabellenLine.format_version,
-    ).where(col(AhbTabellenLine.qualifier).is_not(None))
+    stmt = (
+        select(
+            AhbTabellenLine.qualifier,
+            AhbTabellenLine.pruefidentifikator,
+            AhbTabellenLine.format_version,
+        )
+        .where(col(AhbTabellenLine.qualifier).like("E_%"))
+    )
 
     if format_version is not None:
         stmt = stmt.where(AhbTabellenLine.format_version == format_version)
@@ -102,7 +106,7 @@ def get_ebd_to_pruefis_mapping(
     with Session(bind=engine) as session:
         results = session.exec(stmt).all()
 
-    # Build the mapping, filtering for EBD qualifiers and deduplicating
+    # Build the mapping, deduplicating by (format_version, pruefidentifikator) per EBD key
     seen: dict[str, set[tuple[EdifactFormatVersion, str]]] = {}
     for qualifier, pruefidentifikator, fv in results:
         if qualifier is not None and _EBD_QUALIFIER_PATTERN.match(qualifier):
