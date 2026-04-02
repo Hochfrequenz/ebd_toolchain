@@ -56,7 +56,8 @@ docker login ghcr.io -u YOUR_GITHUB_USERNAME
 4. create a docker-compose.yml that looks like this:
 https://github.com/Hochfrequenz/ebd_toolchain/blob/f71c4285f1d1515b36b604487da298708b8858fa/docker-compose.yaml#L1-L22
 
-5. then run:
+5. (Optional) To enrich EBD output with Prüfidentifikator links, set `GITHUB_TOKEN` (a token with read access to `Hochfrequenz/xml-migs-and-ahbs`) and `FORMAT_VERSION` (e.g. `FV2610`) in your `.env` file.
+6. then run:
 ```bash
 docker compose up --abort-on-container-exit
 ```
