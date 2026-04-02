@@ -3,21 +3,18 @@ This module downloads the AHB SQLite database from the xml-migs-and-ahbs GitHub 
 and queries the EBD-to-Pruefidentifikator mapping from the v_ahbtabellen view.
 """
 
+import json
 import logging
-import re
 import tempfile
 from pathlib import Path
 
 import py7zr
 import requests
 from efoli import EdifactFormatVersion
-from fundamend.sqlmodels.ahbtabellen_view import AhbTabellenLine
 from rebdhuhn.models.ebd_table import EbdPruefidentifikator
-from sqlmodel import Session, col, create_engine, select
+from sqlmodel import Session, create_engine, text
 
 _logger = logging.getLogger(__name__)
-
-_EBD_QUALIFIER_PATTERN = re.compile(r"^E_\d{4}$")
 
 
 def download_ahb_db(github_token: str, target_dir: Path | None = None) -> Path:
@@ -84,6 +81,8 @@ def get_ebd_to_pruefis_mapping(
     Queries the v_ahbtabellen view for EBD qualifiers and returns a mapping
     from EBD code (e.g. 'E_0003') to a list of EbdPruefidentifikator objects.
 
+    Uses REGEXP and GROUP BY in SQLite to do all filtering and aggregation in the database.
+
     Args:
         db_path: Path to the AHB SQLite database file.
         format_version: Optional format version filter (e.g. 'FV2610').
@@ -91,34 +90,28 @@ def get_ebd_to_pruefis_mapping(
     """
     engine = create_engine(f"sqlite:///{db_path}")
 
-    stmt = (
-        select(
-            AhbTabellenLine.qualifier,
-            AhbTabellenLine.pruefidentifikator,
-            AhbTabellenLine.format_version,
-        )
-        .where(col(AhbTabellenLine.qualifier).like("E_%"))
-    )
-
+    sql = """
+        SELECT v_ahbtabellen.format_version,
+               qualifier AS ebd_key,
+               JSON_GROUP_ARRAY(DISTINCT pruefidentifikator) AS pruefidentifikatoren
+        FROM v_ahbtabellen
+        WHERE qualifier REGEXP 'E_[0-9]+'
+    """
+    params: dict[str, str] = {}
     if format_version is not None:
-        stmt = stmt.where(AhbTabellenLine.format_version == format_version)
+        sql += " AND format_version = :fv"
+        params["fv"] = format_version
+    sql += " GROUP BY v_ahbtabellen.format_version, qualifier ORDER BY v_ahbtabellen.format_version DESC, ebd_key"
 
     with Session(bind=engine) as session:
-        results = session.exec(stmt).all()
+        results = session.exec(text(sql), params=params).all()  # type: ignore[call-overload]
 
-    # Build the mapping, deduplicating by (format_version, pruefidentifikator) per EBD key
-    seen: dict[str, set[tuple[EdifactFormatVersion, str]]] = {}
-    for qualifier, pruefidentifikator, fv in results:
-        if qualifier is not None and _EBD_QUALIFIER_PATTERN.match(qualifier):
-            if qualifier not in seen:
-                seen[qualifier] = set()
-            seen[qualifier].add((EdifactFormatVersion(fv), pruefidentifikator))
-
-    # Convert to sorted list of EbdPruefidentifikator
-    return {
-        ebd_key: sorted(
-            [EbdPruefidentifikator(format_version=fv, pruefidentifikator=pi) for fv, pi in pairs],
+    mapping: dict[str, list[EbdPruefidentifikator]] = {}
+    for fv, ebd_key, pruefis_json in results:
+        pruefis: list[str] = json.loads(pruefis_json)
+        mapping[ebd_key] = sorted(
+            [EbdPruefidentifikator(format_version=EdifactFormatVersion(fv), pruefidentifikator=pi) for pi in pruefis],
             key=lambda p: p.pruefidentifikator,
         )
-        for ebd_key, pairs in sorted(seen.items())
-    }
+
+    return mapping
