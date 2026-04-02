@@ -27,7 +27,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 import click
 from ebdamame import (
@@ -47,6 +47,8 @@ from rebdhuhn.models.ebd_graph import EbdGraph
 from rebdhuhn.models.ebd_table import EbdTable, EbdTableMetaData
 from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError, SvgConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
+
+from ebd_toolchain.ahb_pruefi import download_ahb_db, get_ebd_to_pruefis_mapping
 
 _logger = logging.getLogger(__name__)
 
@@ -68,6 +70,9 @@ class Settings(BaseSettings):
 
     kroki_port: int = Field(alias="KROKI_PORT")
     kroki_host: str = Field(alias="KROKI_HOST")
+    ahb_db_path: Optional[Path] = Field(default=None, alias="AHB_DB_PATH")
+    github_token: Optional[str] = Field(default=None, alias="GITHUB_TOKEN")
+    format_version: Optional[str] = Field(default=None, alias="FORMAT_VERSION")
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
@@ -87,7 +92,12 @@ def _dump_dot(dot_path: Path, ebd_graph: EbdGraph) -> None:
 
 def _dump_svg(svg_path: Path, ebd_graph: EbdGraph, converter: DotToSvgConverter) -> None:
     dot_code = convert_graph_to_dot(ebd_graph, ebd_link_template="?ebd={ebd_code}")
-    svg_code = convert_dot_to_svg_kroki(dot_code, converter, release_info=ebd_graph.metadata.release_information)
+    svg_code = convert_dot_to_svg_kroki(
+        dot_code,
+        converter,
+        release_info=ebd_graph.metadata.release_information,
+        pruefidentifikatoren=ebd_graph.metadata.pruefidentifikatoren,
+    )
     with open(svg_path, "w+", encoding="utf-8") as svg_file:
         svg_file.write(svg_code)
 
@@ -133,6 +143,18 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     settings = Settings()  # type: ignore[call-arg]
     # read settings from environment variable/.env file
     kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
+
+    # Load EBD-to-Pruefidentifikator mapping from AHB database (if available)
+    ebd_to_pruefis: dict[str, list[str]] = {}
+    if settings.ahb_db_path or settings.github_token:
+        db_path = settings.ahb_db_path
+        if db_path is None and settings.github_token is not None:
+            click.secho("Downloading AHB database from xml-migs-and-ahbs...", fg="cyan")
+            db_path = download_ahb_db(settings.github_token)
+        if db_path is not None:
+            click.secho(f"Loading EBD-to-Prüfi mapping from {db_path} (format_version={settings.format_version})")
+            ebd_to_pruefis = get_ebd_to_pruefis_mapping(db_path, format_version=settings.format_version)
+            click.secho(f"Loaded Prüfi mapping for {len(ebd_to_pruefis)} EBDs", fg="green")
     if output_path.exists() and output_path.is_dir():
         click.secho(f"The output directory '{output_path}' exists already. Will remove its content.", fg="yellow")
         for item in output_path.iterdir():
@@ -175,6 +197,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                     role="N/A",
                     remark=docx_tables.remark,  # pylint:disable=no-member
+                    pruefidentifikatoren=ebd_to_pruefis.get(ebd_key, []),
                 )
                 ebd_table = EbdTable(metadata=ebd_meta_data, rows=[])
 
@@ -188,6 +211,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                 )
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
+                ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key, [])
         except Exception as scraping_error:  # pylint:disable=broad-except
             handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING)
             continue

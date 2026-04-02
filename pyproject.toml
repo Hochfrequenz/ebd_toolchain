@@ -20,9 +20,11 @@ classifiers = [
 ]
 dependencies = [
     "ebdamame>=1.0.0",
-    "rebdhuhn>=1.0.0",
+    "rebdhuhn>=1.2.0",
     "click",
-    "pydantic-settings"
+    "pydantic-settings",
+    "fundamend[sqlmodels]>=0.34.0",
+    "py7zr",
     # add all the dependencies here
 ]
 dynamic = ["readme", "version"]
