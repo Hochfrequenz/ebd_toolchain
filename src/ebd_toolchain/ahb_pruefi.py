@@ -81,27 +81,29 @@ def get_ebd_to_pruefis_mapping(
     Queries the v_ahbtabellen view for EBD qualifiers and returns a mapping
     from EBD code (e.g. 'E_0003') to a list of EbdPruefidentifikator objects.
 
-    Uses REGEXP and GROUP BY in SQLite to do all filtering and aggregation in the database.
+    Uses GLOB and GROUP BY in SQLite to do all filtering and aggregation in the database.
 
     Args:
         db_path: Path to the AHB SQLite database file.
-        format_version: Optional format version filter (e.g. 'FV2610').
-            If None, returns mappings across all format versions.
+        format_version: Format version filter (e.g. 'FV2610').
+            Required to produce correct results — without it, duplicate EBD keys
+            across format versions would collide.
     """
     engine = create_engine(f"sqlite:///{db_path}")
 
+    # GLOB is natively supported in SQLite (unlike REGEXP which needs a UDF)
     sql = """
-        SELECT v_ahbtabellen.format_version,
+        SELECT format_version,
                qualifier AS ebd_key,
                JSON_GROUP_ARRAY(DISTINCT pruefidentifikator) AS pruefidentifikatoren
         FROM v_ahbtabellen
-        WHERE qualifier REGEXP 'E_[0-9]+'
+        WHERE qualifier GLOB 'E_[0-9][0-9][0-9][0-9]'
     """
     params: dict[str, str] = {}
     if format_version is not None:
         sql += " AND format_version = :fv"
         params["fv"] = format_version
-    sql += " GROUP BY v_ahbtabellen.format_version, qualifier ORDER BY v_ahbtabellen.format_version DESC, ebd_key"
+    sql += " GROUP BY format_version, qualifier ORDER BY ebd_key"
 
     with Session(bind=engine) as session:
         results = session.exec(text(sql), params=params).all()  # type: ignore[call-overload]
@@ -109,9 +111,15 @@ def get_ebd_to_pruefis_mapping(
     mapping: dict[str, list[EbdPruefidentifikator]] = {}
     for fv, ebd_key, pruefis_json in results:
         pruefis: list[str] = json.loads(pruefis_json)
-        mapping[ebd_key] = sorted(
-            [EbdPruefidentifikator(format_version=EdifactFormatVersion(fv), pruefidentifikator=pi) for pi in pruefis],
-            key=lambda p: p.pruefidentifikator,
-        )
+        new_entries = [
+            EbdPruefidentifikator(format_version=EdifactFormatVersion(fv), pruefidentifikator=pi) for pi in pruefis
+        ]
+        if ebd_key in mapping:
+            # Multiple format versions for the same EBD — merge and deduplicate
+            existing_pis = {p.pruefidentifikator for p in mapping[ebd_key]}
+            mapping[ebd_key].extend(e for e in new_entries if e.pruefidentifikator not in existing_pis)
+        else:
+            mapping[ebd_key] = new_entries
+        mapping[ebd_key].sort(key=lambda p: p.pruefidentifikator)
 
     return mapping

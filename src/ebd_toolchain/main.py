@@ -207,7 +207,6 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     remark=docx_tables.remark,  # pylint:disable=no-member
                 )
                 ebd_table = EbdTable(metadata=ebd_meta_data, rows=[])
-                ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key)
 
             else:
                 converter = DocxTableConverter(
@@ -219,7 +218,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
                 )
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
-                ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key)
+            ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key)
         except Exception as scraping_error:  # pylint:disable=broad-except
             handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING)
             continue
