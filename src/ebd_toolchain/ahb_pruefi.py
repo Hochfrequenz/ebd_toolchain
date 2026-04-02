@@ -10,6 +10,7 @@ from pathlib import Path
 
 import py7zr
 import requests
+from efoli import EdifactFormatVersion
 from fundamend.sqlmodels.ahbtabellen_view import AhbTabellenLine
 from rebdhuhn.models.ebd_table import EbdPruefidentifikator
 from sqlmodel import Session, col, create_engine, select
@@ -102,12 +103,12 @@ def get_ebd_to_pruefis_mapping(
         results = session.exec(stmt).all()
 
     # Build the mapping, filtering for EBD qualifiers and deduplicating
-    seen: dict[str, set[tuple[str, str]]] = {}  # ebd_key -> set of (format_version, pruefidentifikator)
+    seen: dict[str, set[tuple[EdifactFormatVersion, str]]] = {}
     for qualifier, pruefidentifikator, fv in results:
         if qualifier is not None and _EBD_QUALIFIER_PATTERN.match(qualifier):
             if qualifier not in seen:
                 seen[qualifier] = set()
-            seen[qualifier].add((str(fv), pruefidentifikator))
+            seen[qualifier].add((EdifactFormatVersion(fv), pruefidentifikator))
 
     # Convert to sorted list of EbdPruefidentifikator
     return {

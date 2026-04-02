@@ -44,7 +44,7 @@ from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
 from rebdhuhn.kroki import DotToSvgConverter, Kroki
 from rebdhuhn.models.ebd_graph import EbdGraph
-from rebdhuhn.models.ebd_table import EbdTable, EbdTableMetaData
+from rebdhuhn.models.ebd_table import EbdPruefidentifikator, EbdTable, EbdTableMetaData
 from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError, SvgConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
@@ -145,7 +145,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     kroki_client = Kroki(kroki_host=f"http://{settings.kroki_host}:{settings.kroki_port}")
 
     # Load EBD-to-Pruefidentifikator mapping from AHB database (if available)
-    ebd_to_pruefis: dict[str, list[str]] = {}
+    ebd_to_pruefis: dict[str, list[EbdPruefidentifikator]] = {}
     if settings.ahb_db_path or settings.github_token:
         db_path = settings.ahb_db_path
         if db_path is None and settings.github_token is not None:
