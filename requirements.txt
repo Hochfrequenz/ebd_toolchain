@@ -33,7 +33,7 @@ lxml==6.0.2
     #   python-docx
     #   rebdhuhn
     #   svgutils
-more-itertools==11.0.1
+more-itertools==11.0.2
     # via ebdamame
 multivolumefile==0.2.3
     # via py7zr
