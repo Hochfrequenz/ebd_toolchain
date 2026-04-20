@@ -22,7 +22,7 @@ efoli==2.3.0
     # via
     #   fundamend
     #   rebdhuhn
-fundamend[sqlmodels]==0.35.0
+fundamend[sqlmodels]==0.36.0
     # via ebd-toolchain (pyproject.toml)
 idna==3.11
     # via requests
