@@ -24,7 +24,7 @@ efoli==2.3.0
     #   rebdhuhn
 fundamend[sqlmodels]==0.36.0
     # via ebd-toolchain (pyproject.toml)
-idna==3.11
+idna==3.13
     # via requests
 inflate64==1.0.4
     # via py7zr
