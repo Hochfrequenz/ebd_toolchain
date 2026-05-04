@@ -76,7 +76,7 @@ sqlalchemy==2.0.48
     # via
     #   fundamend
     #   sqlmodel
-sqlmodel==0.0.37
+sqlmodel==0.0.38
     # via fundamend
 svgutils==0.3.4
     # via rebdhuhn
