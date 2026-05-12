@@ -72,7 +72,7 @@ rebdhuhn==1.2.0
     #   ebdamame
 requests==2.33.1
     # via rebdhuhn
-sqlalchemy==2.0.48
+sqlalchemy==2.0.49
     # via
     #   fundamend
     #   sqlmodel
