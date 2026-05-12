@@ -28,7 +28,7 @@ idna==3.13
     # via requests
 inflate64==1.0.4
     # via py7zr
-lxml==6.0.2
+lxml==6.1.0
     # via
     #   python-docx
     #   rebdhuhn
