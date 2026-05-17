@@ -8,9 +8,6 @@ jobs:
   push_to_registry:
     name: Push Docker image to GHCR
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Check out the repo
@@ -22,7 +19,9 @@ jobs:
           VERSION=$(echo ${GITHUB_REF#refs/tags/})
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        # the token has repo:(read+write) and package(read+write) scope and expires on 2026-05-15
+        # https://github.com/Hochfrequenz/ebd_toolchain/settings/secrets/actions/GHCR_PUSH_TOKEN
+        run: echo "${{ secrets.GHCR_PUSH_TOKEN }}" | docker login ghcr.io -u hf-kklein --password-stdin
 
       - name: Build and push
         run: |
