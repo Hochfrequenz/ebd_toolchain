@@ -15,17 +15,26 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v6
-        # with: # we don't need this
-        #  submodules: "recursive"
-      - name: get version tag
-        run: |
-          VERSION=$(echo ${GITHUB_REF#refs/tags/})
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{raw}}
 
       - name: Build and push
-        run: |
-          docker build -t ebd_toolchain:$VERSION .
-          docker tag ebd_toolchain:$VERSION ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
-          docker push ghcr.io/hochfrequenz/ebd_toolchain:$VERSION
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
