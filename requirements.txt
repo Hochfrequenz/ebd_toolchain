@@ -38,7 +38,7 @@ inflate64==1.0.4
     # via py7zr
 librt==0.11.0
     # via mypy
-lxml==6.1.0
+lxml==6.1.1
     # via
     #   python-docx
     #   rebdhuhn
