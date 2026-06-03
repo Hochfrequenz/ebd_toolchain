@@ -32,7 +32,7 @@ fundamend[sqlmodels]==0.36.0
     # via ebd-toolchain (pyproject.toml)
 greenlet==3.5.1
     # via sqlalchemy
-idna==3.16
+idna==3.18
     # via requests
 inflate64==1.0.4
     # via py7zr
