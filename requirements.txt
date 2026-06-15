@@ -88,7 +88,7 @@ rebdhuhn==1.2.0
     #   ebdamame
 requests==2.34.2
     # via rebdhuhn
-sqlalchemy[mypy]==2.0.50
+sqlalchemy[mypy]==2.0.51
     # via
     #   fundamend
     #   sqlmodel
