@@ -30,7 +30,7 @@ efoli==2.3.0
     #   rebdhuhn
 fundamend[sqlmodels]==0.36.0
     # via ebd-toolchain (pyproject.toml)
-greenlet==3.5.1
+greenlet==3.5.2
     # via sqlalchemy
 idna==3.18
     # via requests
