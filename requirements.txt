@@ -98,7 +98,7 @@ svgutils==0.3.4
     # via rebdhuhn
 texttable==1.7.0
     # via py7zr
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   mypy
     #   pydantic
