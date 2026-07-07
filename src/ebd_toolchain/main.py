@@ -27,7 +27,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import click
 from ebdamame import (
@@ -118,6 +118,12 @@ def _dump_json(json_path: Path, ebd_table: EbdTable | EbdTableMetaData) -> None:
         json.dump(ebd_table.model_dump(mode="json"), json_file, ensure_ascii=False, indent=2, sort_keys=True)
 
 
+def _dump_json_data(json_path: Path, data: Any) -> None:
+    """dump arbitrary JSON-serialisable data (used for the discovery artifacts below)"""
+    with open(json_path, "w+", encoding="utf-8") as json_file:
+        json.dump(data, json_file, ensure_ascii=False, indent=2, sort_keys=True)
+
+
 @click.command()
 @click.option(
     "-i",
@@ -172,6 +178,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     click.secho(f"Created a new directory at {output_path}", fg="green")
     all_ebd_keys = get_all_ebd_keys(input_path)
     error_sources: dict[str, list[str]] = {}
+    # one discovery entry per successfully-processed EBD; written out as index.json below so that
+    # AI/programmatic consumers can map a natural-language question -> ebd_code -> file(s) without
+    # crawling the directory. Only EBDs that produced output are listed (everything here exists).
+    index_entries: list[dict[str, Any]] = []
 
     def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory) -> None:
         color = "yellow" if category == ErrorCategory.PUML_EXPORT else "red"
@@ -222,6 +232,17 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         except Exception as scraping_error:  # pylint:disable=broad-except
             handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING)
             continue
+        _md = ebd_table.metadata
+        index_entries.append(
+            {
+                "ebd_code": _md.ebd_code,
+                "ebd_name": _md.ebd_name,
+                "chapter": _md.chapter,
+                "section": _md.section,
+                "role": _md.role,
+                "pruefidentifikatoren": [p.pruefidentifikator for p in (_md.pruefidentifikatoren or [])],
+            }
+        )
         if "json" in export_types:
             json_path = output_path / Path(f"{ebd_key}.json")
             _dump_json(json_path, ebd_table)
@@ -261,6 +282,23 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         except (AssertionError, Exception) as general_error:  # pylint:disable=broad-exception-caught
             # both the SVG and dot path require graphviz to work, hence the common error handling block
             handle_known_error(general_error, ebd_key, ErrorCategory.SVG_EXPORT)
+    # --- discovery artifacts for AI/programmatic consumers (see machine-readable_… repo llms.txt) ---
+    # index.json: the catalog (ebd_code -> name/chapter/section/role/pruefis) for NL->key resolution.
+    index_entries.sort(key=lambda entry: entry["ebd_code"])
+    _dump_json_data(output_path / "index.json", index_entries)
+    # pruefi_to_key.json: the primary lookup, since users quote Prüfidentifikatoren from AHBs/EDIFACT.
+    pruefi_to_key = {
+        pruefi: entry["ebd_code"] for entry in index_entries for pruefi in entry["pruefidentifikatoren"]
+    }
+    _dump_json_data(output_path / "pruefi_to_key.json", dict(sorted(pruefi_to_key.items())))
+    # ebd.schema.json: the JSON Schema of the <ebd_code>.json files, so consumers can reason over them.
+    _dump_json_data(output_path / "ebd.schema.json", EbdTable.model_json_schema())
+    click.secho(
+        f"💾 Wrote index.json ({len(index_entries)} EBDs), "
+        f"pruefi_to_key.json ({len(pruefi_to_key)} Prüfis) and ebd.schema.json",
+        fg="green",
+    )
+
     # Sort: ERRORs first, then WARNINGs
     sorted_errors = dict(sorted(error_sources.items(), key=lambda x: (x[0].startswith("[WARNING"), x[0])))
     click.secho(json.dumps(sorted_errors, indent=4))
