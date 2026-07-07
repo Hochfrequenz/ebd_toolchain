@@ -27,7 +27,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 import click
 from ebdamame import (
@@ -49,6 +49,7 @@ from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
 from ebd_toolchain.ahb_pruefi import download_ahb_db, get_ebd_to_pruefis_mapping
+from ebd_toolchain.discovery import EbdIndex, EbdIndexEntry, PruefiToKey
 
 _logger = logging.getLogger(__name__)
 
@@ -118,10 +119,11 @@ def _dump_json(json_path: Path, ebd_table: EbdTable | EbdTableMetaData) -> None:
         json.dump(ebd_table.model_dump(mode="json"), json_file, ensure_ascii=False, indent=2, sort_keys=True)
 
 
-def _dump_json_data(json_path: Path, data: Any) -> None:
-    """dump arbitrary JSON-serialisable data (used for the discovery artifacts below)"""
+def _write_json_text(json_path: Path, json_text: str) -> None:
+    """write a pre-serialised JSON string (e.g. from a pydantic ``model_dump_json``) plus a newline"""
     with open(json_path, "w+", encoding="utf-8") as json_file:
-        json.dump(data, json_file, ensure_ascii=False, indent=2, sort_keys=True)
+        json_file.write(json_text)
+        json_file.write("\n")
 
 
 @click.command()
@@ -178,10 +180,11 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     click.secho(f"Created a new directory at {output_path}", fg="green")
     all_ebd_keys = get_all_ebd_keys(input_path)
     error_sources: dict[str, list[str]] = {}
-    # one discovery entry per successfully-processed EBD; written out as index.json below so that
+    # one discovery entry per successfully-scraped EBD; written out as index.json below so that
     # AI/programmatic consumers can map a natural-language question -> ebd_code -> file(s) without
-    # crawling the directory. Only EBDs that produced output are listed (everything here exists).
-    index_entries: list[dict[str, Any]] = []
+    # crawling the directory. (The <ebd_code>.json is emitted for each; .puml/.dot/.svg may be
+    # skipped for table-less or non-plottable EBDs.)
+    index_entries: list[EbdIndexEntry] = []
 
     def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory) -> None:
         color = "yellow" if category == ErrorCategory.PUML_EXPORT else "red"
@@ -234,14 +237,14 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             continue
         _md = ebd_table.metadata
         index_entries.append(
-            {
-                "ebd_code": _md.ebd_code,
-                "ebd_name": _md.ebd_name,
-                "chapter": _md.chapter,
-                "section": _md.section,
-                "role": _md.role,
-                "pruefidentifikatoren": [p.pruefidentifikator for p in (_md.pruefidentifikatoren or [])],
-            }
+            EbdIndexEntry(
+                ebd_code=_md.ebd_code,
+                ebd_name=_md.ebd_name,
+                chapter=_md.chapter,
+                section=_md.section,
+                role=_md.role,
+                pruefidentifikatoren=[p.pruefidentifikator for p in (_md.pruefidentifikatoren or [])],
+            )
         )
         if "json" in export_types:
             json_path = output_path / Path(f"{ebd_key}.json")
@@ -284,15 +287,27 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
             handle_known_error(general_error, ebd_key, ErrorCategory.SVG_EXPORT)
     # --- discovery artifacts for AI/programmatic consumers (see machine-readable_… repo llms.txt) ---
     # index.json: the catalog (ebd_code -> name/chapter/section/role/pruefis) for NL->key resolution.
-    index_entries.sort(key=lambda entry: entry["ebd_code"])
-    _dump_json_data(output_path / "index.json", index_entries)
+    index = EbdIndex(sorted(index_entries, key=lambda entry: entry.ebd_code))
+    _write_json_text(output_path / "index.json", index.model_dump_json(indent=2))
     # pruefi_to_key.json: the primary lookup, since users quote Prüfidentifikatoren from AHBs/EDIFACT.
-    pruefi_to_key = {
-        pruefi: entry["ebd_code"] for entry in index_entries for pruefi in entry["pruefidentifikatoren"]
-    }
-    _dump_json_data(output_path / "pruefi_to_key.json", dict(sorted(pruefi_to_key.items())))
+    # A Prüfidentifikator should map to exactly one EBD; if the AHB data ever links one to several,
+    # keep the first (lowest ebd_code, since sorted) and warn instead of silently overwriting.
+    pruefi_to_key: dict[str, str] = {}
+    collisions: dict[str, list[str]] = {}
+    for entry in index.root:
+        for pruefi in entry.pruefidentifikatoren:
+            if pruefi in pruefi_to_key and pruefi_to_key[pruefi] != entry.ebd_code:
+                collisions.setdefault(pruefi, [pruefi_to_key[pruefi]]).append(entry.ebd_code)
+                continue
+            pruefi_to_key[pruefi] = entry.ebd_code
+    if collisions:
+        click.secho(f"⚠️ Prüfidentifikator(en) mapped to multiple EBDs (kept the first): {collisions}", fg="yellow")
+    _write_json_text(
+        output_path / "pruefi_to_key.json", PruefiToKey(dict(sorted(pruefi_to_key.items()))).model_dump_json(indent=2)
+    )
     # ebd.schema.json: the JSON Schema of the <ebd_code>.json files, so consumers can reason over them.
-    _dump_json_data(output_path / "ebd.schema.json", EbdTable.model_json_schema())
+    schema_text = json.dumps(EbdTable.model_json_schema(), indent=2, sort_keys=True)
+    _write_json_text(output_path / "ebd.schema.json", schema_text)
     click.secho(
         f"💾 Wrote index.json ({len(index_entries)} EBDs), "
         f"pruefi_to_key.json ({len(pruefi_to_key)} Prüfis) and ebd.schema.json",
