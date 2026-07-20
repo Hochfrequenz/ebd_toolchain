@@ -47,7 +47,7 @@ more-itertools==11.1.0
     # via ebdamame
 multivolumefile==0.2.3
     # via py7zr
-mypy==2.1.0
+mypy==2.3.0
     # via sqlalchemy
 mypy-extensions==1.1.0
     # via mypy
