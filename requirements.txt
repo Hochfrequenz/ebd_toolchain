@@ -59,7 +59,7 @@ psutil==7.2.2
     # via py7zr
 py7zr==1.1.3
     # via ebd-toolchain (pyproject.toml)
-pybcj==1.0.7
+pybcj==1.0.8
     # via py7zr
 pycryptodomex==3.23.0
     # via py7zr
