@@ -19,7 +19,7 @@ Or you can run the entire toolchain in a docker container (requires only Docker)
 
 #### Install both libraries from PiPy:
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8125) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme.
 Run the `docker-desktop` app on your local maschine and start the local kroki container via
@@ -66,9 +66,13 @@ You can find a [Github Action with exactly this setup](https://github.com/Hochfr
 
 ## How to use this Repository on Your Machine (for development)
 
-Please follow the instructions in our
-[Python Template Repository](https://github.com/Hochfrequenz/python_template_repository#how-to-use-this-repository-on-your-machine).
-And for further information, see the [Tox Repository](https://github.com/tox-dev/tox).
+This project uses [uv](https://docs.astral.sh/uv/) to manage its dependencies and dev tooling.
+Install uv, then run
+```bash
+uv sync --group dev
+```
+to set up a local `.venv` with everything you need for development (tests, linting, type checking, coverage, spellchecking, formatting and pre-commit).
+Use `uv run pytest`, `uv run pylint ebd_toolchain`, etc. or activate the `.venv` directly.
 
 ## Contribute
 
