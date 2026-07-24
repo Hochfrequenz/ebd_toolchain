@@ -17,9 +17,9 @@ Or you can run the entire toolchain in a docker container (requires only Docker)
 
 ### Option A: Via Python + Kroki in a Docker Container
 
-#### Install both libraries from PiPy:
+#### Set up the local Python environment:
 ```bash
-uv sync
+uv sync --locked
 ```
 Further, make sure to have a local instance of [kroki](https://kroki.io) up and running via docker (localhost:8125) as described in the [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn) readme.
 Run the `docker-desktop` app on your local maschine and start the local kroki container via
@@ -69,7 +69,7 @@ You can find a [Github Action with exactly this setup](https://github.com/Hochfr
 This repository uses [uv](https://docs.astral.sh/uv/) to manage dependencies and dev tooling.
 
 ```bash
-uv sync --group dev
+uv sync --locked --group dev
 pre-commit install
 ```
 
