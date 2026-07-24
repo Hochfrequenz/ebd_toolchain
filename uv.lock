@@ -620,7 +620,7 @@ type-check = [
 [package.metadata]
 requires-dist = [
     { name = "click" },
-    { name = "ebdamame", specifier = ">=1.0.0" },
+    { name = "ebdamame", specifier = ">=1.0.1" },
     { name = "fundamend", extras = ["sqlmodels"], specifier = ">=0.34.0" },
     { name = "py7zr" },
     { name = "pydantic-settings" },
@@ -661,7 +661,7 @@ type-check = [
 
 [[package]]
 name = "ebdamame"
-version = "1.0.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -670,9 +670,9 @@ dependencies = [
     { name = "python-docx" },
     { name = "rebdhuhn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/e1/10b8d89b508b72ea484e63ff3c6be3644f5a900fd42d542e6c5160fdf98a/ebdamame-1.0.0.tar.gz", hash = "sha256:121500162543d483d6243cd9366b1ea1f8533fb53f1083d5a2119dd5160b0302", size = 34597, upload-time = "2025-12-16T08:26:38.501Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/49/99bca0b8dafde4e46a6fca7e61efa2e762cf2dbfd67d5868cb66dd138b11/ebdamame-1.0.1.tar.gz", hash = "sha256:fd3338e74f7ecc540fd54d7a7e65a7d771f36b25e7bdfcefc4a6285d0338e295", size = 102758, upload-time = "2026-07-24T13:54:55.444Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/01/eb8f7153c66382ba074c5e22bdec6350648bc806a6862add81d230040488/ebdamame-1.0.0-py3-none-any.whl", hash = "sha256:ec59eea5c22790bbe62f879860f8582807131f983ca5ef307ad5fc8672fe9f9f", size = 30737, upload-time = "2025-12-16T08:26:36.627Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/c9/ae8be41a3a0e72a0c8ba45b3a32dc23689b86c705efe7c5170f600f52744/ebdamame-1.0.1-py3-none-any.whl", hash = "sha256:1627ef79e5dd0d9af0458097ec019a14dd19dbb376c37cb5071012a4d41c9c66", size = 30544, upload-time = "2026-07-24T13:54:54.571Z" },
 ]
 
 [[package]]
