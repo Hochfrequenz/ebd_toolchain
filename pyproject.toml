@@ -29,14 +29,25 @@ dependencies = [
 ]
 dynamic = ["readme", "version"]
 
-[project.optional-dependencies]
-coverage = ["coverage==7.15.2"]
-formatting = ["black==26.5.1", "isort==8.0.1"]
-linting = ["pylint==4.0.6"]
-spellcheck = ["codespell==2.4.3"]
-test_packaging = ["build==1.5.0", "twine==6.2.0"]
+[dependency-groups]
 tests = ["pytest==9.1.1"]
-type_check = ["mypy==2.3.0", "types-requests"]
+linting = ["pylint==4.0.6", {include-group = "tests"}]
+type_check = ["mypy==2.3.0", "types-requests", {include-group = "tests"}]
+spell_check = ["codespell==2.4.3"]
+coverage = ["coverage==7.15.2", {include-group = "tests"}]
+formatting = ["black==26.5.1", "isort==8.0.1"]
+dev = [
+    {include-group = "tests"},
+    {include-group = "linting"},
+    {include-group = "type_check"},
+    {include-group = "coverage"},
+    {include-group = "spell_check"},
+    {include-group = "formatting"},
+    "pre-commit",
+]
+
+[tool.uv]
+default-groups = []
 
 [project.urls]
 Changelog = "https://github.com/Hochfrequenz/ebd_toolchain/releases"
