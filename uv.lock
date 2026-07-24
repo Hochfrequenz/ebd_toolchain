@@ -621,7 +621,7 @@ type-check = [
 requires-dist = [
     { name = "click" },
     { name = "ebdamame", specifier = ">=1.0.1" },
-    { name = "fundamend", extras = ["sqlmodels"], specifier = ">=0.34.0" },
+    { name = "fundamend", extras = ["sqlmodels"], specifier = ">=0.36.0" },
     { name = "py7zr" },
     { name = "pydantic-settings" },
     { name = "rebdhuhn", specifier = ">=1.2.0" },

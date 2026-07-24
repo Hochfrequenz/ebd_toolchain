@@ -23,7 +23,7 @@ dependencies = [
     "rebdhuhn>=1.2.0",
     "click",
     "pydantic-settings",
-    "fundamend[sqlmodels]>=0.34.0",
+    "fundamend[sqlmodels]>=0.36.0",
     "py7zr",
     # add all the dependencies here
 ]
