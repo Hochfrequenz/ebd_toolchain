@@ -214,7 +214,6 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     ebd_code=ebd_key,
                     ebd_name=ebd_name,
                     chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
-                    # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",  # noqa: E501
                     role="N/A",
                     remark=docx_tables.remark,  # pylint:disable=no-member
@@ -227,7 +226,6 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     ebd_key=ebd_key,
                     ebd_name=ebd_name,
                     chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
-                    # pylint:disable=line-too-long
                     section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",  # noqa: E501
                 )
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
