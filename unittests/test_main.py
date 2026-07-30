@@ -41,5 +41,5 @@ def test_main(
     json_files = list(tmp_path.glob("*.json"))
     for json_file in json_files:
         assert json_file.exists()
-        with open(json_file, "r", encoding="utf-8") as f:
+        with open(json_file, encoding="utf-8") as f:
             _ = json.load(f)  # must be valid json

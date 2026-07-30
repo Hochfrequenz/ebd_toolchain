@@ -13,8 +13,7 @@ jobs:
         include:
           - group: linting
             commands: |
-              uv run pylint ebd_toolchain
-              uv run pylint unittests --rcfile=unittests/.pylintrc
+              uv run ruff check src/ebd_toolchain unittests
           - group: type_check
             commands: |
               uv run mypy --show-error-codes src/ebd_toolchain --strict
