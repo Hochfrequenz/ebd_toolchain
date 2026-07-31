@@ -75,7 +75,7 @@ pre-commit install
 
 This creates a `.venv` in the repository root; point your IDE's Python interpreter at
 `.venv/bin/python` (PyCharm/VS Code). Run individual checks via `uv run --group <group> <tool>`,
-e.g. `uv run --group tests pytest` or `uv run --group linting pylint ebd_toolchain`.
+e.g. `uv run --group tests pytest` or `uv run --group linting ruff check src/ebd_toolchain`.
 
 ## Contribute
 

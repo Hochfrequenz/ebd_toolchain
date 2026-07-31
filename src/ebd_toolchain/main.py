@@ -27,7 +27,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 import click
 from ebdamame import (
@@ -71,12 +71,12 @@ class Settings(BaseSettings):
 
     kroki_port: int = Field(alias="KROKI_PORT")
     kroki_host: str = Field(alias="KROKI_HOST")
-    github_token: Optional[str] = Field(
+    github_token: str | None = Field(
         default=None,
         alias="GITHUB_TOKEN",
         description="GitHub token to download AHB DB from Hochfrequenz/xml-migs-and-ahbs releases",
     )
-    format_version: Optional[str] = Field(default=None, alias="FORMAT_VERSION")
+    format_version: str | None = Field(default=None, alias="FORMAT_VERSION")
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @field_validator("github_token", "format_version", mode="before")
@@ -214,8 +214,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     ebd_code=ebd_key,
                     ebd_name=ebd_name,
                     chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
-                    # pylint:disable=line-too-long
-                    section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
+                    section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",  # noqa: E501
                     role="N/A",
                     remark=docx_tables.remark,  # pylint:disable=no-member
                 )
@@ -227,8 +226,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     ebd_key=ebd_key,
                     ebd_name=ebd_name,
                     chapter=ebd_kapitel.chapter_title,  # type: ignore[arg-type]
-                    # pylint:disable=line-too-long
-                    section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",
+                    section=f"{ebd_kapitel.chapter}.{ebd_kapitel.section}.{ebd_kapitel.subsection}: {ebd_kapitel.section_title}",  # noqa: E501
                 )
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
             ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key)
