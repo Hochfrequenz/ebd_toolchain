@@ -1,6 +1,6 @@
 """
-This python script copies the example.env to .env if .env does not already exists.
-This is similar to the bash command `mv example.env .env`.
+This python script copies env.example to .env if .env does not already exist.
+This is similar to the bash command `cp env.example .env`.
 It is run as a workflow step (``uv run python create_env_file.py``) in the unit test and coverage CI workflows.
 """
 
