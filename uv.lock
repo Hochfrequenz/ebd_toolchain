@@ -590,7 +590,7 @@ type-check = [
 requires-dist = [
     { name = "click" },
     { name = "ebdamame", specifier = ">=1.0.1" },
-    { name = "fundamend", extras = ["sqlmodels"], specifier = ">=0.36.0" },
+    { name = "fundamend", extras = ["sqlmodels"], specifier = ">=0.37.0" },
     { name = "py7zr" },
     { name = "pydantic-settings" },
     { name = "rebdhuhn", specifier = ">=1.2.0" },
@@ -661,15 +661,15 @@ wheels = [
 
 [[package]]
 name = "fundamend"
-version = "0.36.0"
+version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "efoli" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/92/4e369f5b48354995b43748fc1240f70fb7b105df1becc08afec1209b2fe2/fundamend-0.36.0.tar.gz", hash = "sha256:f48467a046807cb6c598a1d23d175f6afe7e7b4510b6e6dfd47e5fe7888bb21d", size = 68680, upload-time = "2026-04-13T01:14:34.152Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7e/ec/ec77063f465abef95593fbb99ccdb9507d96367b41099f9a09b8625360de/fundamend-0.37.0.tar.gz", hash = "sha256:b60f73df287aa16d610c123819097eabe8fc3367585de9068dda262d5d36a81d", size = 135629, upload-time = "2026-08-03T15:48:50.512Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/39/cf8c8bc7a6484f5b42cc81346086b9e65acb584a74dec9ead9740cdd3548/fundamend-0.36.0-py3-none-any.whl", hash = "sha256:5845cdebb2807c679df90c36303ae70747aed5c542cc765a281b97def298dff8", size = 71030, upload-time = "2026-04-13T01:14:32.44Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/d4/670c89676a07614a43a1c35901cfa96311e715f978f3e03eb7b64d1db361/fundamend-0.37.0-py3-none-any.whl", hash = "sha256:78241b6595b455a1542ce7dd8a8ab8a51861e532e59d9c438415e0fa652b11ce", size = 76650, upload-time = "2026-08-03T15:48:49.153Z" },
 ]
 
 [package.optional-dependencies]
