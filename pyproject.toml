@@ -20,7 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "ebdamame>=1.0.1",
-    "rebdhuhn>=1.2.0",
+    "rebdhuhn>=1.2.1",
     "click",
     "pydantic-settings",
     "fundamend[sqlmodels]>=0.37.0",
