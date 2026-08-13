@@ -23,7 +23,7 @@ dependencies = [
     "rebdhuhn>=1.2.1",
     "click",
     "pydantic-settings",
-    "fundamend[sqlmodels]>=0.36.0",
+    "fundamend[sqlmodels]>=0.37.0",
     "py7zr",
     # add all the dependencies here
 ]
@@ -32,7 +32,7 @@ dynamic = ["readme", "version"]
 [dependency-groups]
 tests = ["pytest==9.1.1"]
 linting = [
-    "ruff==0.16.0",
+    "ruff==0.16.2",
     {include-group = "tests"},
 ]
 type_check = ["mypy==2.3.0", "types-requests", {include-group = "tests"}]
