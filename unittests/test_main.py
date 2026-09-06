@@ -19,7 +19,10 @@ recent_docx_file = (
     / "FV2504"
     / "Entscheidungsbaum-DiagrammeundCodelisten-informatorischeLesefassung4.0a_99991231_20250404.docx"
 )
-assert recent_docx_file.exists()
+pytestmark = pytest.mark.skipif(
+    not recent_docx_file.exists(),
+    reason="edi_energy_mirror submodule is unavailable (e.g. pull request from a fork)",
+)
 
 
 @pytest.mark.parametrize(

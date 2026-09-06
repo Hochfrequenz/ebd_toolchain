@@ -13,8 +13,36 @@ jobs:
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: 'recursive'
+      # edi_energy_mirror is private, so the default GITHUB_TOKEN (scoped to this
+      # repository only) cannot clone it; `submodules: recursive` on the checkout
+      # above would abort the whole job with "Repository not found". The public
+      # submodule needs no credential, the private one is fetched with a PAT.
+      - name: Check out submodules
+        env:
+          # Fine-grained PAT, Contents:Read on Hochfrequenz/edi_energy_mirror only.
+          # Stored in BOTH the Actions and the Dependabot secret store, because
+          # Dependabot-triggered runs resolve secrets against their own store.
+          MIRROR_PAT: ${{ secrets.EDI_ENERGY_MIRROR_PAT }}
+        run: |
+          git submodule update --init machine-readable_entscheidungsbaumdiagramme
+          if [ -z "$MIRROR_PAT" ]; then
+            echo "::notice::EDI_ENERGY_MIRROR_PAT is unavailable (pull request from a fork). Skipping the private edi_energy_mirror submodule; the tests that need it are skipped."
+            exit 0
+          fi
+          # -c rather than --global: the credential travels via GIT_CONFIG_PARAMETERS
+          # (which the submodule subprocess inherits) instead of being written to disk,
+          # and the rewrite is scoped to the Hochfrequenz org.
+          if ! git -c url."https://x-access-token:${MIRROR_PAT}@github.com/Hochfrequenz/".insteadOf="https://github.com/Hochfrequenz/" \
+                   submodule update --init --depth=1 edi_energy_mirror; then
+            echo "::error::Could not fetch edi_energy_mirror. The most likely cause is an expired or unapproved EDI_ENERGY_MIRROR_PAT; check the repository secrets."
+            exit 1
+          fi
+          # `submodule update` also exits 0 when nothing was registered, which would
+          # silently turn a full run into a degraded one.
+          if [ -z "$(ls -A edi_energy_mirror)" ]; then
+            echo "::error::edi_energy_mirror is empty after 'git submodule update' - is it still registered in .gitmodules?"
+            exit 1
+          fi
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
