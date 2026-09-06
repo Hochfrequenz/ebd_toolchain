@@ -19,9 +19,21 @@ recent_docx_file = (
     / "FV2504"
     / "Entscheidungsbaum-DiagrammeundCodelisten-informatorischeLesefassung4.0a_99991231_20250404.docx"
 )
+_mirror_root = repo_root / "edi_energy_mirror" / "edi_energy_de"
+
+if _mirror_root.is_dir() and not recent_docx_file.exists():
+    # The mirror is a scraper whose file names embed validity dates, so documents are
+    # renamed and removed over time. If the submodule is checked out but this document
+    # is gone, the pin is stale - that must fail loudly rather than silently skip, which
+    # would disarm the only test that exercises _main.
+    raise FileNotFoundError(
+        f"edi_energy_mirror is checked out but {recent_docx_file.name} is missing - "
+        "the submodule pin is stale or the document was renamed upstream."
+    )
+
 pytestmark = pytest.mark.skipif(
-    not recent_docx_file.exists(),
-    reason="edi_energy_mirror submodule is unavailable (e.g. pull request from a fork)",
+    not _mirror_root.is_dir(),
+    reason="the private edi_energy_mirror submodule is not available",
 )
 
 
