@@ -77,6 +77,15 @@ This creates a `.venv` in the repository root; point your IDE's Python interpret
 `.venv/bin/python` (PyCharm/VS Code). Run individual checks via `uv run --group <group> <tool>`,
 e.g. `uv run --group tests pytest` or `uv run --group linting ruff check src/ebd_toolchain`.
 
+### The `edi_energy_mirror` submodule
+
+[`edi_energy_mirror`](https://github.com/Hochfrequenz/edi_energy_mirror) is **private**, so
+`git submodule update --init` fails with `Repository not found` unless your GitHub account has read
+access to it. You do not need it for most development: without the submodule the test that consumes
+a real EBD document is skipped and the rest of the suite runs normally.
+
+The other submodule, `machine-readable_entscheidungsbaumdiagramme`, is public and always available.
+
 ## Contribute
 
 You are very welcome to contribute to this template repository by opening a pull request against the main branch, both here and in rebdhuhn and ebdamame.
