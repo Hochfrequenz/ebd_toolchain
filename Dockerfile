@@ -1,3 +1,4 @@
+# Stays on 3.14: pyppmd/pybcj/inflate64/pyyaml have no cp315 wheels yet and python:3.15-slim has no compiler (uv sync fails). Bump once they ship cp315 wheels.
 FROM python:3.14-slim
 COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /uvx /bin/
 
