@@ -36,7 +36,7 @@ linting = [
     "ruff==0.17.1",
     {include-group = "tests"},
 ]
-type_check = ["mypy==2.4.0", "types-requests", {include-group = "tests"}]
+type_check = ["mypy==2.4.1", "types-requests", {include-group = "tests"}]
 spell_check = ["codespell==2.4.3"]
 coverage = ["coverage==7.16.2", {include-group = "tests"}]
 dev = [
