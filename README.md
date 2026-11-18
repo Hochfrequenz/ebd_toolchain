@@ -45,6 +45,13 @@ main.py -i <path to .doxc location> -o <output directory> -t json -t dot -t svg 
 ```
 where `-i`, `-o` and `-t` denote the input directory path, the output directory path and the supported data format, respectively.
 
+Next to the per-EBD files, the `json` export type also writes:
+
+- `<EBD>.outcomes.json`: answers "which checks does a result code imply?" for the EBD (and which result codes remain
+  reachable after each decision), as computed by `explain_outcomes` of [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn#explain-the-outcomes-which-checks-lead-to-a-result-code).
+  EBDs without a table have no such file.
+- `ebd_outcomes.schema.json`: the JSON Schema of all `<EBD>.outcomes.json` files (like `ebd.schema.json` for `<EBD>.json`).
+
 ### Option B: Docker only (no Python required)
 In this repository:
 1. create an `.env` file with a structure similar to [`env.example`](env.example).

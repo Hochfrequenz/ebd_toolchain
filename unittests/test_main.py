@@ -8,6 +8,7 @@ from typing import Literal
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from rebdhuhn import EbdOutcomes
 
 from ebd_toolchain.main import _main
 
@@ -58,3 +59,10 @@ def test_main(
         assert json_file.exists()
         with open(json_file, encoding="utf-8") as f:
             _ = json.load(f)  # must be valid json
+    # outcomes are tied to the json export
+    outcomes_files = list(tmp_path.glob("*.outcomes.json"))
+    assert len(outcomes_files) > 0
+    assert (tmp_path / "ebd_outcomes.schema.json").exists()
+    for outcomes_file in outcomes_files:
+        _ = EbdOutcomes.model_validate_json(outcomes_file.read_text(encoding="utf-8"))
+        assert (tmp_path / outcomes_file.name.removesuffix(".outcomes.json")).with_suffix(".json").exists()
