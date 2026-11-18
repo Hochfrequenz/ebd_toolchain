@@ -11,6 +11,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from rebdhuhn import EbdOutcomes
 
+from ebd_toolchain.discovery import EbdExportReport
 from ebd_toolchain.main import _main
 
 repo_root = Path(__file__).parent.parent
@@ -100,6 +101,30 @@ def test_main(
     for outcomes_file in outcomes_files:
         _ = EbdOutcomes.model_validate_json(outcomes_file.read_text(encoding="utf-8"))
         assert (tmp_path / outcomes_file.name.removesuffix(".outcomes.json")).with_suffix(".json").exists()
+    # the export report must tell the truth about what is (not) in the directory
+    report = EbdExportReport.model_validate_json((tmp_path / "export_report.json").read_text(encoding="utf-8"))
+    assert (tmp_path / "export_report.schema.json").exists()
+    assert report.ebd_codes_in_document
+    for issue in report.issues:
+        assert issue.missing_files
+        for missing_file in issue.missing_files:
+            assert not (tmp_path / missing_file).exists()
+    failed_scraping = {
+        issue.ebd_code for issue in report.issues if issue.stage == "scraping" and issue.severity == "error"
+    }
+    for ebd_code in report.ebd_codes_in_document:
+        assert (tmp_path / f"{ebd_code}.json").exists() or ebd_code in failed_scraping
+    # the other direction: whatever is absent must be listed by the issues of that EBD
+    listed: dict[str, set[str]] = {}
+    for issue in report.issues:
+        listed.setdefault(issue.ebd_code, set()).update(issue.missing_files)
+    for ebd_code in report.ebd_codes_in_document:
+        expected = [f"{ebd_code}.json", f"{ebd_code}.dot", f"{ebd_code}.svg"]
+        json_path = tmp_path / f"{ebd_code}.json"
+        if json_path.exists() and json.loads(json_path.read_text(encoding="utf-8"))["rows"]:
+            expected.append(f"{ebd_code}.outcomes.json")
+        for expected_file in expected:
+            assert (tmp_path / expected_file).exists() or expected_file in listed.get(ebd_code, set()), expected_file
     # _main only logs SVG/PlantUML export errors, so a green run proves nothing about the renderer unless we check files
     problems = _diagram_problems(tmp_path, export_types)
     assert not problems, "\n".join(problems)

@@ -51,6 +51,14 @@ Next to the per-EBD files, the `json` export type also writes:
   reachable after each decision), as computed by `explain_outcomes` of [rebdhuhn](https://github.com/Hochfrequenz/rebdhuhn#explain-the-outcomes-which-checks-lead-to-a-result-code).
   EBDs without a table have no such file.
 - `ebd_outcomes.schema.json`: the JSON Schema of all `<EBD>.outcomes.json` files (like `ebd.schema.json` for `<EBD>.json`).
+- `export_report.json`: lists the EBDs of the document that could not be scraped, converted or rendered, at which stage and
+  why (`issues`), and which of their files are consequently missing in the directory (`missing_files`). It tells a consumer
+  "this EBD exists in the document but is not here" apart from "this EBD has no `.puml`". EBDs without a table are not
+  issues; they legitimately have no `.outcomes.json`/`.puml`.
+  `missing_files` lists everything that is absent for that EBD at the end of the run (not only the file of the failed
+  stage); for a failed scrape it is unknown whether the EBD has a table, so a table is assumed. Messages are sanitised
+  (paths and the kroki address become placeholders), so the report does not depend on the machine. `ebd_codes_in_document` lists every EBD of the document.
+- `export_report.schema.json`: the JSON Schema of `export_report.json`.
 
 ### Option B: Docker only (no Python required)
 In this repository:
