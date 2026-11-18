@@ -2,7 +2,8 @@
 A small click-based script to extract all EBDs from a given .docx file (available at edi-energy.de).
 For each EBD it writes (depending on the chosen export types) ``<EBD>.json``, ``.dot``, ``.svg`` and ``.puml``.
 With ``json`` it additionally writes ``<EBD>.outcomes.json`` (only for EBDs with a table) and the discovery files
-``index.json``, ``pruefi_to_key.json``, ``ebd.schema.json`` and ``ebd_outcomes.schema.json``.
+``index.json``, ``pruefi_to_key.json``, ``ebd.schema.json``, ``ebd_outcomes.schema.json`` and
+``export_report.json`` (+ ``export_report.schema.json``), which lists the EBDs/files that are missing and why.
 """
 
 # invoke like this:
@@ -28,6 +29,8 @@ With ``json`` it additionally writes ``<EBD>.outcomes.json`` (only for EBDs with
 
 import json
 import logging
+from collections.abc import Iterable, Sequence
+from collections.abc import Set as AbstractSet
 from enum import Enum
 from pathlib import Path
 from typing import Literal
@@ -53,9 +56,12 @@ from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
 from ebd_toolchain.ahb_pruefi import download_ahb_db, get_ebd_to_pruefis_mapping
-from ebd_toolchain.discovery import EbdIndex, EbdIndexEntry, PruefiToKey
+from ebd_toolchain.discovery import EbdExportIssue, EbdExportReport, EbdIndex, EbdIndexEntry, PruefiToKey
 
 _logger = logging.getLogger(__name__)
+
+_MAX_ISSUE_MESSAGE_LENGTH = 500
+_ISSUE_STAGES_IN_PIPELINE_ORDER = ["scraping", "graph_conversion", "outcomes_export", "puml_export", "svg_export"]
 
 
 class ErrorCategory(Enum):
@@ -107,6 +113,62 @@ def _dump_outcomes(outcomes_path: Path, ebd_graph: EbdGraph) -> None:
 def _outcomes_schema_text() -> str:
     """the JSON Schema of the ``<ebd_code>.outcomes.json`` files (content of ``ebd_outcomes.schema.json``)"""
     return json.dumps(EbdOutcomes.model_json_schema(mode="serialization"), indent=2, sort_keys=True)
+
+
+def _export_report_schema_text() -> str:
+    """the JSON Schema of ``export_report.json`` (content of ``export_report.schema.json``)"""
+    return json.dumps(EbdExportReport.model_json_schema(mode="serialization"), indent=2, sort_keys=True)
+
+
+def _expected_files(ebd_code: str, export_types: Sequence[str], has_table: bool) -> list[str]:
+    """
+    The files that the requested export types should yield for an EBD (in a fixed order).
+    EBDs without a table legitimately have neither an outcomes nor a puml file.
+    """
+    expected: list[str] = []
+    if "json" in export_types:
+        expected.append(f"{ebd_code}.json")
+        if has_table:
+            expected.append(f"{ebd_code}.outcomes.json")
+    if "dot" in export_types:
+        expected.append(f"{ebd_code}.dot")
+    if "svg" in export_types:
+        expected.append(f"{ebd_code}.svg")
+    if "puml" in export_types and has_table:
+        expected.append(f"{ebd_code}.puml")
+    return expected
+
+
+def _build_export_report(
+    ebd_codes_in_document: Iterable[str],
+    raw_issues: Iterable[tuple[str, str | None, ErrorCategory, Exception]],
+    output_path: Path,
+    export_types: Sequence[str],
+    ebds_without_table: AbstractSet[str],
+) -> EbdExportReport:
+    """
+    Turns the errors collected during the run into the report.
+    ``missing_files`` is what is really absent in the output directory (of the files the export types ask for),
+    not a guess based on the stage; so the claim holds even if e.g. only the dot but not the svg got written.
+    """
+    issues: list[EbdExportIssue] = []
+    for ebd_code, ebd_name, category, error in raw_issues:
+        severity, stage = category.value.lower().split(":")
+        expected = _expected_files(ebd_code, export_types, ebd_code not in ebds_without_table)
+        message = " ".join(str(error).split())
+        issues.append(
+            EbdExportIssue(
+                ebd_code=ebd_code,
+                ebd_name=ebd_name,
+                stage=stage,  # type:ignore[arg-type] # validated by pydantic; the values are those of ErrorCategory
+                severity=severity,  # type:ignore[arg-type]
+                error_type=type(error).__name__,
+                message=message[:_MAX_ISSUE_MESSAGE_LENGTH],
+                missing_files=[name for name in expected if not (output_path / name).exists()],
+            )
+        )
+    issues.sort(key=lambda issue: (issue.ebd_code, _ISSUE_STAGES_IN_PIPELINE_ORDER.index(issue.stage)))
+    return EbdExportReport(ebd_codes_in_document=sorted(ebd_codes_in_document), issues=issues)
 
 
 def _dump_dot(dot_path: Path, ebd_graph: EbdGraph) -> None:
@@ -201,7 +263,13 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     # natural-language question or Prüfidentifikator -> ebd_code -> file without crawling the directory.
     index_entries: list[EbdIndexEntry] = []
 
-    def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory) -> None:
+    # every handled error, in the order of occurrence; becomes export_report.json once the files on disk are known
+    raw_issues: list[tuple[str, str | None, ErrorCategory, Exception]] = []
+    # EBDs without a table legitimately have neither .outcomes.json nor .puml
+    ebds_without_table: set[str] = set()
+
+    def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory, ebd_name: str | None) -> None:
+        raw_issues.append((ebd_key, ebd_name, category, error))
         color = "yellow" if category.value.startswith("WARNING") else "red"
         click.secho(f"{category.value}: {ebd_key}: {error}", fg=color)
         error_type_name = type(error).__name__
@@ -216,10 +284,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         try:
             docx_tables = get_ebd_docx_tables(docx_file_path=input_path, ebd_key=ebd_key)
         except TableNotFoundError as table_not_found_error:
-            handle_known_error(table_not_found_error, ebd_key, ErrorCategory.SCRAPING)
+            handle_known_error(table_not_found_error, ebd_key, ErrorCategory.SCRAPING, ebd_title)
             continue
         except EbdTableNotConvertibleError as not_convertible_error:
-            handle_known_error(not_convertible_error, ebd_key, ErrorCategory.SCRAPING)
+            handle_known_error(not_convertible_error, ebd_key, ErrorCategory.SCRAPING, ebd_title)
             continue
         assert ebd_kapitel is not None
         ebd_name = ebd_kapitel.subsection_title or ebd_title
@@ -234,6 +302,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     remark=docx_tables.remark,  # pylint:disable=no-member
                 )
                 ebd_table = EbdTable(metadata=ebd_meta_data, rows=[])
+                ebds_without_table.add(ebd_key)
 
             else:
                 converter = DocxTableConverter(
@@ -246,7 +315,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
             ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key)
         except Exception as scraping_error:  # pylint:disable=broad-except
-            handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING)
+            handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING, ebd_name)
             continue
         _md = ebd_table.metadata
         index_entries.append(
@@ -266,10 +335,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         try:
             ebd_graph = convert_table_to_graph(ebd_table)
         except GraphConversionError as graph_error:
-            handle_known_error(graph_error, ebd_key, ErrorCategory.GRAPH_CONVERSION)
+            handle_known_error(graph_error, ebd_key, ErrorCategory.GRAPH_CONVERSION, ebd_name)
             continue
         except Exception as unknown_error:  # pylint:disable=broad-except
-            handle_known_error(unknown_error, ebd_key, ErrorCategory.GRAPH_CONVERSION)
+            handle_known_error(unknown_error, ebd_key, ErrorCategory.GRAPH_CONVERSION, ebd_name)
             continue
         if "json" in export_types and any(ebd_table.rows):
             # EBDs without a table have nothing to explain, hence no outcomes file for them
@@ -278,7 +347,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 _dump_outcomes(outcomes_path, ebd_graph)
                 click.secho(f"💾 Successfully exported '{ebd_key}.outcomes.json' to {outcomes_path.absolute()}")
             except Exception as outcomes_error:  # pylint:disable=broad-exception-caught
-                handle_known_error(outcomes_error, ebd_key, ErrorCategory.OUTCOMES_EXPORT)
+                handle_known_error(outcomes_error, ebd_key, ErrorCategory.OUTCOMES_EXPORT, ebd_name)
         if "puml" in export_types:
             if not any(ebd_table.rows):
                 click.secho(f"EBD {ebd_key} has no ebd table; Skip puml creation!", fg="yellow")
@@ -288,9 +357,9 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     _dump_puml(puml_path, ebd_graph)
                     click.secho(f"💾 Successfully exported '{ebd_key}.puml' to {puml_path.absolute()}")
                 except PlantumlConversionError as puml_error:
-                    handle_known_error(puml_error, ebd_key, ErrorCategory.PUML_EXPORT)
+                    handle_known_error(puml_error, ebd_key, ErrorCategory.PUML_EXPORT, ebd_name)
                 except (AssertionError, Exception) as general_error:  # pylint:disable=broad-exception-caught
-                    handle_known_error(general_error, ebd_key, ErrorCategory.PUML_EXPORT)
+                    handle_known_error(general_error, ebd_key, ErrorCategory.PUML_EXPORT, ebd_name)
 
         try:
             if "dot" in export_types:
@@ -302,10 +371,10 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 _dump_svg(svg_path, ebd_graph, kroki_client)
                 click.secho(f"💾 Successfully exported '{ebd_key}.svg' to {svg_path.absolute()}")
         except SvgConversionError as svg_error:
-            handle_known_error(svg_error, ebd_key, ErrorCategory.SVG_EXPORT)
+            handle_known_error(svg_error, ebd_key, ErrorCategory.SVG_EXPORT, ebd_name)
         except (AssertionError, Exception) as general_error:  # pylint:disable=broad-exception-caught
             # both the SVG and dot path require graphviz to work, hence the common error handling block
-            handle_known_error(general_error, ebd_key, ErrorCategory.SVG_EXPORT)
+            handle_known_error(general_error, ebd_key, ErrorCategory.SVG_EXPORT, ebd_name)
     # --- discovery artifacts for AI/programmatic consumers (see machine-readable_… repo llms.txt) ---
     # Only emitted alongside JSON export: they describe/point to the <ebd_code>.json files.
     if "json" in export_types:
@@ -335,9 +404,17 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         _write_json_text(output_path / "ebd.schema.json", schema_text)
         # ebd_outcomes.schema.json: the JSON Schema of the <ebd_code>.outcomes.json files.
         _write_json_text(output_path / "ebd_outcomes.schema.json", _outcomes_schema_text())
+        # export_report.json: what is missing in this directory (compared to the document) and why.
+        # Built last, because it checks which of the expected files actually exist.
+        export_report = _build_export_report(
+            all_ebd_keys.keys(), raw_issues, output_path, export_types, ebds_without_table
+        )
+        _write_json_text(output_path / "export_report.json", export_report.model_dump_json(indent=2))
+        _write_json_text(output_path / "export_report.schema.json", _export_report_schema_text())
         click.secho(
             f"💾 Wrote index.json ({len(index.root)} EBDs), "
-            f"pruefi_to_key.json ({len(pruefi_to_key)} Prüfis), ebd.schema.json and ebd_outcomes.schema.json",
+            f"pruefi_to_key.json ({len(pruefi_to_key)} Prüfis), ebd.schema.json, ebd_outcomes.schema.json, "
+            f"export_report.json ({len(export_report.issues)} issues) and export_report.schema.json",
             fg="green",
         )
 
