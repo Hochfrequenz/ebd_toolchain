@@ -91,7 +91,13 @@ def _patched_scraping(monkeypatch: MonkeyPatch, tmp_path: Path) -> Path:
     )
     monkeypatch.setenv("KROKI_HOST", "localhost")
     monkeypatch.setenv("KROKI_PORT", "8000")
-    monkeypatch.delenv("GITHUB_TOKEN", raising=False)  # no download of the AHB database
+    # an env variable overrides a token in a developer's .env; the empty string becomes None -> no AHB download
+    monkeypatch.setenv("GITHUB_TOKEN", "")
+
+    def _no_download(*_: Any, **__: Any) -> None:
+        raise AssertionError("the AHB database must not be downloaded in these tests")
+
+    monkeypatch.setattr(ebd_toolchain.main, "download_ahb_db", _no_download)
     monkeypatch.setattr(
         ebd_toolchain.main,
         "get_all_ebd_keys",
