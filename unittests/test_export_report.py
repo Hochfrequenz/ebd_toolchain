@@ -7,13 +7,16 @@ import json
 from pathlib import Path
 from typing import Any, Literal
 
+import pytest
+from ebdamame import TableNotFoundError
 from pytest import MonkeyPatch
 from rebdhuhn.graph_conversion import convert_table_to_graph
+from rebdhuhn.kroki import KrokiDotBadRequestError
 from rebdhuhn.models.errors import GraphConversionError
 
 import ebd_toolchain.main
 from ebd_toolchain.discovery import EbdExportIssue, EbdExportReport
-from ebd_toolchain.main import _main
+from ebd_toolchain.main import _ISSUE_CLASSIFICATION, ErrorCategory, _build_export_report, _main
 from unittests.scraping_stubs import SCRAPING_FAILS, WITH_TABLE, WITHOUT_TABLE
 
 _ExportTypes = list[Literal["puml", "dot", "json", "svg"]]
@@ -78,15 +81,6 @@ def test_outcomes_warning(patched_scraping: Path, monkeypatch: MonkeyPatch) -> N
     assert issue.ebd_name == "sub"  # the title as it is known after scraping
     assert issue.missing_files == [f"{WITH_TABLE}.outcomes.json"]
     assert (patched_scraping / f"{WITH_TABLE}.dot").exists()
-
-
-def test_message_is_truncated(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
-    def _fail(*_: Any, **__: Any) -> None:
-        raise ValueError("x" * 2000)
-
-    monkeypatch.setattr(ebd_toolchain.main, "_dump_outcomes", _fail)
-    _main(Path("unused.docx"), patched_scraping, _JSON_AND_DOT)
-    assert len(_read_report(patched_scraping).issues[0].message) == 500
 
 
 def test_graph_conversion_error(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
@@ -162,13 +156,16 @@ def test_issues_are_sorted_by_code_then_stage(patched_scraping: Path, monkeypatc
     monkeypatch.setattr(ebd_toolchain.main, "_dump_svg", _fail)
     export_types: _ExportTypes = ["json", "dot", "svg", "puml"]
     _main(Path("unused.docx"), patched_scraping, export_types)
-    stages = [(i.ebd_code, i.stage) for i in _read_report(patched_scraping).issues]
-    assert stages == [
+    issues = _read_report(patched_scraping).issues
+    assert [(i.ebd_code, i.stage) for i in issues] == [
         (WITH_TABLE, "outcomes_export"),
         (WITH_TABLE, "puml_export"),
         (WITH_TABLE, "svg_export"),
         (WITHOUT_TABLE, "svg_export"),
     ]
+    # state based: every issue of an EBD lists everything that is absent, not only the file of its own stage
+    all_missing = [f"{WITH_TABLE}.outcomes.json", f"{WITH_TABLE}.svg", f"{WITH_TABLE}.puml"]
+    assert [i.missing_files for i in issues] == [all_missing, all_missing, all_missing, [f"{WITHOUT_TABLE}.svg"]]
 
 
 def test_report_round_trip_and_schema(patched_scraping: Path) -> None:
@@ -185,3 +182,142 @@ def test_without_json_no_report(patched_scraping: Path) -> None:
     _main(Path("unused.docx"), patched_scraping, export_types)
     assert not (patched_scraping / "export_report.json").exists()
     assert not (patched_scraping / "export_report.schema.json").exists()
+
+
+def test_files_of_not_requested_export_types_are_never_listed(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    def _convert(table: Any) -> Any:
+        raise GraphConversionError("cannot convert")
+
+    monkeypatch.setattr(ebd_toolchain.main, "convert_table_to_graph", _convert)
+    export_types: _ExportTypes = ["json"]
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    issues = _read_report(patched_scraping).issues
+    assert [(i.ebd_code, i.missing_files) for i in issues] == [
+        (WITH_TABLE, [f"{WITH_TABLE}.outcomes.json"]),
+        (WITHOUT_TABLE, []),
+    ]
+
+
+def test_unexpected_scraping_error(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    class _BrokenConverter:  # pylint:disable=too-few-public-methods
+        def __init__(self, *_: Any, **__: Any) -> None:
+            pass
+
+        def convert_docx_tables_to_ebd_table(self) -> None:
+            raise ValueError("kaputt")
+
+    monkeypatch.setattr(ebd_toolchain.main, "DocxTableConverter", _BrokenConverter)
+    _main(Path("unused.docx"), patched_scraping, _JSON_AND_DOT)
+    issues = _read_report(patched_scraping).issues
+    assert [(i.ebd_code, i.ebd_name, i.stage, i.severity, i.error_type, i.message) for i in issues] == [
+        (WITH_TABLE, "sub", "scraping", "error", "ValueError", "kaputt")
+    ]
+    assert issues[0].missing_files == [f"{WITH_TABLE}.json", f"{WITH_TABLE}.outcomes.json", f"{WITH_TABLE}.dot"]
+
+
+def test_empty_exception_text_falls_back_to_the_error_type(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    def _fail(*_: Any, **__: Any) -> None:
+        raise AssertionError  # a bare assert has no text
+
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_puml", _fail)
+    export_types: _ExportTypes = ["json", "puml"]
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    assert [i.message for i in _read_report(patched_scraping).issues] == ["AssertionError"]
+
+
+def test_table_not_found_error_message(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    def _get_tables(docx_file_path: Path, ebd_key: str) -> Any:  # pylint:disable=unused-argument
+        raise TableNotFoundError(ebd_key)
+
+    monkeypatch.setattr(ebd_toolchain.main, "get_ebd_docx_tables", _get_tables)
+    _main(Path("unused.docx"), patched_scraping, _JSON_AND_DOT)
+    issues = _read_report(patched_scraping).issues
+    assert {(i.error_type, i.message) for i in issues} == {("TableNotFoundError", i.ebd_code) for i in issues}
+    assert all(i.message for i in issues)
+
+
+def test_scraping_error_of_a_table_less_ebd_does_not_expect_outcomes_or_puml(
+    patched_scraping: Path, monkeypatch: MonkeyPatch
+) -> None:
+    def _broken_metadata(**_: Any) -> None:
+        raise ValueError("invalid metadata")
+
+    monkeypatch.setattr(ebd_toolchain.main, "EbdTableMetaData", _broken_metadata)
+    export_types: _ExportTypes = ["json", "dot", "puml"]
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    issues = _read_report(patched_scraping).issues
+    assert [(i.ebd_code, i.stage) for i in issues] == [(WITHOUT_TABLE, "scraping")]
+    assert issues[0].missing_files == [f"{WITHOUT_TABLE}.json", f"{WITHOUT_TABLE}.dot"]
+
+
+def test_message_does_not_leak_environment_details(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    def _fail(*_: Any, **__: Any) -> None:
+        raise OSError(
+            f"cannot write {patched_scraping.absolute()}/E_0003.svg; HTTPConnectionPool(host='localhost', port=8000): "
+            "Max retries exceeded with url: / (Caused by <urllib3.connection.HTTPConnection object at 0x7f12ab>); "
+            "http://localhost:8000/x and localhost:8000 and /home/someone/project/file.txt and unused.docx"
+        )
+
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_svg", _fail)
+    export_types: _ExportTypes = ["json", "svg"]
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    message = _read_report(patched_scraping).issues[0].message
+    for leaked in (str(patched_scraping), "localhost", "8000", "0x7f12ab", "/home/someone", "unused.docx"):
+        assert leaked not in message
+    assert message.startswith("cannot write <output>/E_0003.svg; HTTPConnectionPool(<kroki>)")
+
+
+def test_kroki_bad_request_keeps_only_the_part_before_the_diagram_source(
+    patched_scraping: Path, monkeypatch: MonkeyPatch
+) -> None:
+    def _fail(*_: Any, **__: Any) -> None:
+        raise KrokiDotBadRequestError("digraph secret_dot_source {}", "Error 400: syntax error")
+
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_svg", _fail)
+    export_types: _ExportTypes = ["json", "svg"]
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    assert _read_report(patched_scraping).issues[0].message == "BadRequest while creating svg: Error 400: syntax error"
+
+
+def test_long_message_is_cut_with_an_ellipsis(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    def _fail(*_: Any, **__: Any) -> None:
+        raise ValueError("x" * 2000)
+
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_outcomes", _fail)
+    _main(Path("unused.docx"), patched_scraping, _JSON_AND_DOT)
+    message = _read_report(patched_scraping).issues[0].message
+    assert len(message) == 500
+    assert message.endswith("x…")
+
+
+def test_report_is_identical_across_output_directories(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+    def _fail(path: Path, *_: Any, **__: Any) -> None:
+        raise OSError(f"cannot write {path.absolute()} (object at 0x7f12ab34cd)")
+
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_svg", _fail)
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_outcomes", _fail)
+    export_types: _ExportTypes = ["json", "svg"]
+    other = patched_scraping.parent / "somewhere" / "else"
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    _main(Path("unused.docx"), other, export_types)
+    first = (patched_scraping / "export_report.json").read_bytes()
+    assert first == (other / "export_report.json").read_bytes()
+    assert b"cannot write <output>/E_0003.svg" in first
+
+
+@pytest.mark.parametrize("category", list(ErrorCategory))
+def test_every_error_category_yields_a_valid_issue(category: ErrorCategory, tmp_path: Path) -> None:
+    assert category in _ISSUE_CLASSIFICATION
+    report = _build_export_report(
+        [WITH_TABLE],
+        [(WITH_TABLE, None, category, ValueError("boom"))],
+        tmp_path,
+        ["json", "dot", "svg", "puml"],
+        set(),
+        input_path=Path("in.docx"),
+        kroki_host="localhost",
+        kroki_port=8000,
+    )
+    assert len(report.issues) == 1
+    assert report.issues[0].severity == ("warning" if category.value.startswith("WARNING") else "error")
+    assert category.value.endswith(report.issues[0].stage)

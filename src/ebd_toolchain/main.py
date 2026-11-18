@@ -29,6 +29,7 @@ With ``json`` it additionally writes ``<EBD>.outcomes.json`` (only for EBDs with
 
 import json
 import logging
+import re
 from collections.abc import Iterable, Sequence
 from collections.abc import Set as AbstractSet
 from enum import Enum
@@ -49,19 +50,26 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from rebdhuhn import EbdOutcomes, explain_outcomes
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
-from rebdhuhn.kroki import DotToSvgConverter, Kroki
+from rebdhuhn.kroki import DotToSvgConverter, Kroki, KrokiDotBadRequestError, KrokiPlantUmlBadRequestError
 from rebdhuhn.models.ebd_graph import EbdGraph
 from rebdhuhn.models.ebd_table import EbdPruefidentifikator, EbdTable, EbdTableMetaData
 from rebdhuhn.models.errors import GraphConversionError, PlantumlConversionError, SvgConversionError
 from rebdhuhn.plantuml import convert_graph_to_plantuml
 
 from ebd_toolchain.ahb_pruefi import download_ahb_db, get_ebd_to_pruefis_mapping
-from ebd_toolchain.discovery import EbdExportIssue, EbdExportReport, EbdIndex, EbdIndexEntry, PruefiToKey
+from ebd_toolchain.discovery import (
+    EbdExportIssue,
+    EbdExportReport,
+    EbdExportSeverity,
+    EbdExportStage,
+    EbdIndex,
+    EbdIndexEntry,
+    PruefiToKey,
+)
 
 _logger = logging.getLogger(__name__)
 
 _MAX_ISSUE_MESSAGE_LENGTH = 500
-_ISSUE_STAGES_IN_PIPELINE_ORDER = ["scraping", "graph_conversion", "outcomes_export", "puml_export", "svg_export"]
 
 
 class ErrorCategory(Enum):
@@ -74,6 +82,17 @@ class ErrorCategory(Enum):
     # Warnings (non-critical - only affect secondary outputs)
     PUML_EXPORT = "WARNING:puml_export"
     OUTCOMES_EXPORT = "WARNING:outcomes_export"
+
+
+# How an ErrorCategory shows up in export_report.json. The order of this mapping is the order in which the stages run
+# and also the order of the issues of one EBD in the report. Every ErrorCategory must be listed (there is a test).
+_ISSUE_CLASSIFICATION: dict[ErrorCategory, tuple[EbdExportStage, EbdExportSeverity]] = {
+    ErrorCategory.SCRAPING: ("scraping", "error"),
+    ErrorCategory.GRAPH_CONVERSION: ("graph_conversion", "error"),
+    ErrorCategory.OUTCOMES_EXPORT: ("outcomes_export", "warning"),
+    ErrorCategory.PUML_EXPORT: ("puml_export", "warning"),
+    ErrorCategory.SVG_EXPORT: ("svg_export", "error"),
+}
 
 
 # pylint:disable=too-few-public-methods
@@ -139,35 +158,84 @@ def _expected_files(ebd_code: str, export_types: Sequence[str], has_table: bool)
     return expected
 
 
-def _build_export_report(
+def _path_pattern(path: Path, token: str) -> list[tuple[re.Pattern[str], str]]:
+    """patterns that replace a path (absolute and as given) by the token"""
+    patterns: list[tuple[re.Pattern[str], str]] = []
+    for form in dict.fromkeys([str(path.absolute()), str(path)]):  # longest first, no duplicates
+        if Path(form).is_absolute() or path.suffix or len(path.parts) > 1:
+            patterns.append((re.compile(re.escape(form)), token))
+        else:  # a bare relative name like "output" is only a path if something follows it
+            patterns.append((re.compile(re.escape(form) + r"(?=/)"), token))
+    return patterns
+
+
+def _issue_message(  # pylint:disable=too-many-arguments,too-many-positional-arguments
+    error: Exception, output_path: Path, input_path: Path, kroki_host: str, kroki_port: int
+) -> str:
+    """
+    The exception text as it can be published: free of the environment it was produced in (paths, kroki address,
+    object addresses), as it must not differ between machines. A single line of at most 500 characters.
+    """
+    text = str(error)
+    # kroki's bad request errors embed the whole diagram source behind the response body
+    diagram_source = error.dot_code if isinstance(error, KrokiDotBadRequestError) else None
+    if isinstance(error, KrokiPlantUmlBadRequestError):
+        diagram_source = error.plant_uml_code
+    if diagram_source and diagram_source in text:
+        text = text[: text.index(diagram_source)].rstrip(" /")
+    host_and_port = f"{kroki_host}:{kroki_port}"
+    replacements = [
+        *_path_pattern(output_path, "<output>"),
+        *_path_pattern(input_path, "<input>"),
+        (re.compile(re.escape(f"http://{host_and_port}") + "|" + re.escape(f"https://{host_and_port}")), "<kroki>"),
+        (re.compile(re.escape(host_and_port)), "<kroki>"),
+        (re.compile(rf"host=['\"]{re.escape(kroki_host)}['\"], port={kroki_port}"), "<kroki>"),
+        (re.compile(r" at 0x[0-9a-fA-F]+"), ""),
+        # any other absolute path with at least two segments
+        (re.compile(r"(?<![\w/])/[\w.\-]+(?:/[\w.\-]+)+/?"), "<path>"),
+    ]
+    for pattern, replacement in replacements:
+        text = pattern.sub(replacement, text)
+    text = " ".join(text.split()) or type(error).__name__
+    if len(text) > _MAX_ISSUE_MESSAGE_LENGTH:
+        text = text[: _MAX_ISSUE_MESSAGE_LENGTH - 1] + "…"
+    return text
+
+
+def _build_export_report(  # pylint:disable=too-many-arguments,too-many-positional-arguments
     ebd_codes_in_document: Iterable[str],
     raw_issues: Iterable[tuple[str, str | None, ErrorCategory, Exception]],
     output_path: Path,
     export_types: Sequence[str],
     ebds_without_table: AbstractSet[str],
+    *,
+    input_path: Path,
+    kroki_host: str,
+    kroki_port: int,
 ) -> EbdExportReport:
     """
     Turns the errors collected during the run into the report.
     ``missing_files`` is what is really absent in the output directory (of the files the export types ask for),
     not a guess based on the stage; so the claim holds even if e.g. only the dot but not the svg got written.
     """
+    category_order = list(_ISSUE_CLASSIFICATION)
     issues: list[EbdExportIssue] = []
-    for ebd_code, ebd_name, category, error in raw_issues:
-        severity, stage = category.value.lower().split(":")
+    for ebd_code, ebd_name, category, error in sorted(
+        raw_issues, key=lambda raw_issue: (raw_issue[0], category_order.index(raw_issue[2]))
+    ):
+        stage, severity = _ISSUE_CLASSIFICATION[category]
         expected = _expected_files(ebd_code, export_types, ebd_code not in ebds_without_table)
-        message = " ".join(str(error).split())
         issues.append(
             EbdExportIssue(
                 ebd_code=ebd_code,
                 ebd_name=ebd_name,
-                stage=stage,  # type:ignore[arg-type] # validated by pydantic; the values are those of ErrorCategory
-                severity=severity,  # type:ignore[arg-type]
+                stage=stage,
+                severity=severity,
                 error_type=type(error).__name__,
-                message=message[:_MAX_ISSUE_MESSAGE_LENGTH],
+                message=_issue_message(error, output_path, input_path, kroki_host, kroki_port),
                 missing_files=[name for name in expected if not (output_path / name).exists()],
             )
         )
-    issues.sort(key=lambda issue: (issue.ebd_code, _ISSUE_STAGES_IN_PIPELINE_ORDER.index(issue.stage)))
     return EbdExportReport(ebd_codes_in_document=sorted(ebd_codes_in_document), issues=issues)
 
 
@@ -293,6 +361,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         ebd_name = ebd_kapitel.subsection_title or ebd_title
         try:
             if isinstance(docx_tables, EbdNoTableSection):
+                ebds_without_table.add(ebd_key)  # known now; stays true even if building the table below fails
                 ebd_meta_data = EbdTableMetaData(
                     ebd_code=ebd_key,
                     ebd_name=ebd_name,
@@ -302,7 +371,6 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                     remark=docx_tables.remark,  # pylint:disable=no-member
                 )
                 ebd_table = EbdTable(metadata=ebd_meta_data, rows=[])
-                ebds_without_table.add(ebd_key)
 
             else:
                 converter = DocxTableConverter(
@@ -314,6 +382,8 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
                 )
                 ebd_table = converter.convert_docx_tables_to_ebd_table()
             ebd_table.metadata.pruefidentifikatoren = ebd_to_pruefis.get(ebd_key)
+            if not any(ebd_table.rows):  # the run itself skips outcomes and puml for these, so the report must too
+                ebds_without_table.add(ebd_key)
         except Exception as scraping_error:  # pylint:disable=broad-except
             handle_known_error(scraping_error, ebd_key, ErrorCategory.SCRAPING, ebd_name)
             continue
@@ -407,7 +477,14 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         # export_report.json: what is missing in this directory (compared to the document) and why.
         # Built last, because it checks which of the expected files actually exist.
         export_report = _build_export_report(
-            all_ebd_keys.keys(), raw_issues, output_path, export_types, ebds_without_table
+            all_ebd_keys.keys(),
+            raw_issues,
+            output_path,
+            export_types,
+            ebds_without_table,
+            input_path=input_path,
+            kroki_host=settings.kroki_host,
+            kroki_port=settings.kroki_port,
         )
         _write_json_text(output_path / "export_report.json", export_report.model_dump_json(indent=2))
         _write_json_text(output_path / "export_report.schema.json", _export_report_schema_text())

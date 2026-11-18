@@ -31,21 +31,24 @@ class PruefiToKey(RootModel[dict[str, str]]):
     """``pruefi_to_key.json``: Prüfidentifikator -> ``ebd_code`` (the primary lookup)"""
 
 
+EbdExportStage = Literal["scraping", "graph_conversion", "svg_export", "puml_export", "outcomes_export"]
+EbdExportSeverity = Literal["error", "warning"]
+
+
 class EbdExportIssue(BaseModel):
     """one thing that went wrong for one EBD, and which of its files are consequently missing"""
 
     ebd_code: str = Field(description="the EBD code, e.g. E_0060")
     ebd_name: str | None = Field(description="the title from the document if it was known at that point, else null")
-    stage: Literal["scraping", "graph_conversion", "svg_export", "puml_export", "outcomes_export"] = Field(
-        description="the pipeline stage that failed"
-    )
-    severity: Literal["error", "warning"] = Field(
+    stage: EbdExportStage = Field(description="the pipeline stage that failed")
+    severity: EbdExportSeverity = Field(
         description="errors affect the primary outputs, warnings only secondary outputs (.puml, .outcomes.json)"
     )
     error_type: str = Field(description="class name of the exception, e.g. EbdTableNotConvertibleError")
     message: str = Field(description="the exception message in a single line, at most 500 characters")
     missing_files: list[str] = Field(
-        description="files of this EBD that were requested by the export types but are not in the directory"
+        description="all files of this EBD that were requested by the export types but are absent from the directory "
+        "(state based: not only the file of this issue's own stage; if the same EBD has several issues, each lists all)"
     )
 
 

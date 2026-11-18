@@ -80,3 +80,12 @@ def test_main(
     }
     for ebd_code in report.ebd_codes_in_document:
         assert (tmp_path / f"{ebd_code}.json").exists() or ebd_code in failed_scraping
+    # the other direction: whatever is absent must be explained by an issue
+    explained = {issue.ebd_code for issue in report.issues}
+    for ebd_code in report.ebd_codes_in_document:
+        expected = [f"{ebd_code}.json", f"{ebd_code}.dot", f"{ebd_code}.svg"]
+        json_path = tmp_path / f"{ebd_code}.json"
+        if json_path.exists() and json.loads(json_path.read_text(encoding="utf-8"))["rows"]:
+            expected.append(f"{ebd_code}.outcomes.json")
+        for expected_file in expected:
+            assert (tmp_path / expected_file).exists() or ebd_code in explained, expected_file
