@@ -3,6 +3,7 @@ tests the main script
 """
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -37,6 +38,39 @@ pytestmark = pytest.mark.skipif(
     not _mirror_root.is_dir(),
     reason="the private edi_energy_mirror submodule is not available",
 )
+
+
+_MIN_SVG_BYTES = 200
+
+
+def _diagram_problems(output_dir: Path, export_types: Sequence[str]) -> list[str]:
+    """
+    Checks the diagram files in output_dir; returns a list of human readable problems (empty if all is fine).
+    `_main` only logs SVG export errors (e.g. kroki not reachable or rejecting the dot code), so the files are the only
+    evidence that the renderer works.
+    """
+    problems: list[str] = []
+    if "svg" in export_types:
+        svg_files = sorted(output_dir.glob("E_*.svg"))
+        if not svg_files:
+            problems.append("no E_*.svg was written at all (is kroki reachable and compatible?)")
+        if "dot" in export_types:
+            # _main writes the .dot right before the .svg in the same try block: .dot without .svg => rendering failed
+            svg_stems = {svg.stem for svg in svg_files}
+            missing = sorted(dot.stem for dot in output_dir.glob("E_*.dot") if dot.stem not in svg_stems)
+            if missing:
+                problems.append(f"{len(missing)} dot file(s) without svg, first 20 stems: {missing[:20]}")
+        broken = sorted(
+            svg.name
+            for svg in svg_files
+            if svg.stat().st_size < _MIN_SVG_BYTES or "<svg" not in svg.read_text(encoding="utf-8", errors="replace")
+        )
+        if broken:
+            problems.append(f"{len(broken)} svg file(s) tiny or not an svg document, first 20: {broken[:20]}")
+    if "puml" in export_types and not list(output_dir.glob("E_*.puml")):
+        # the pipeline only writes the PlantUML source (convert_graph_to_plantuml); it is not rendered via kroki
+        problems.append("no E_*.puml was written at all")
+    return problems
 
 
 @pytest.mark.parametrize(
@@ -91,3 +125,6 @@ def test_main(
             expected.append(f"{ebd_code}.outcomes.json")
         for expected_file in expected:
             assert (tmp_path / expected_file).exists() or expected_file in listed.get(ebd_code, set()), expected_file
+    # _main only logs SVG/PlantUML export errors, so a green run proves nothing about the renderer unless we check files
+    problems = _diagram_problems(tmp_path, export_types)
+    assert not problems, "\n".join(problems)
