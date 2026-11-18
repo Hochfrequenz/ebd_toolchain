@@ -1,5 +1,8 @@
 """
 A small click-based script to extract all EBDs from a given .docx file (available at edi-energy.de).
+For each EBD it writes (depending on the chosen export types) ``<EBD>.json``, ``.dot``, ``.svg`` and ``.puml``.
+With ``json`` it additionally writes ``<EBD>.outcomes.json`` (only for EBDs with a table) and the discovery files
+``index.json``, ``pruefi_to_key.json``, ``ebd.schema.json`` and ``ebd_outcomes.schema.json``.
 """
 
 # invoke like this:
@@ -40,6 +43,7 @@ from ebdamame import (
 from ebdamame.docxtableconverter import DocxTableConverter
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from rebdhuhn import EbdOutcomes, explain_outcomes
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.graphviz import convert_dot_to_svg_kroki, convert_graph_to_dot
 from rebdhuhn.kroki import DotToSvgConverter, Kroki
@@ -63,6 +67,7 @@ class ErrorCategory(Enum):
     SVG_EXPORT = "ERROR:svg_export"
     # Warnings (non-critical - only affect secondary outputs)
     PUML_EXPORT = "WARNING:puml_export"
+    OUTCOMES_EXPORT = "WARNING:outcomes_export"
 
 
 # pylint:disable=too-few-public-methods
@@ -92,6 +97,16 @@ def _dump_puml(puml_path: Path, ebd_graph: EbdGraph) -> None:
     plantuml_code = convert_graph_to_plantuml(ebd_graph)
     with open(puml_path, "w+", encoding="utf-8") as uml_file:
         uml_file.write(plantuml_code)
+
+
+def _dump_outcomes(outcomes_path: Path, ebd_graph: EbdGraph) -> None:
+    """write which steps a result code implies (see rebdhuhn's ``explain_outcomes``) as JSON"""
+    _write_json_text(outcomes_path, explain_outcomes(ebd_graph).model_dump_json(indent=2))
+
+
+def _outcomes_schema_text() -> str:
+    """the JSON Schema of the ``<ebd_code>.outcomes.json`` files (content of ``ebd_outcomes.schema.json``)"""
+    return json.dumps(EbdOutcomes.model_json_schema(mode="serialization"), indent=2, sort_keys=True)
 
 
 def _dump_dot(dot_path: Path, ebd_graph: EbdGraph) -> None:
@@ -147,7 +162,7 @@ def _write_json_text(json_path: Path, json_text: str) -> None:
     "--export_types",
     type=click.Choice(["puml", "dot", "json", "svg"], case_sensitive=False),
     multiple=True,
-    help="Choose which file you'd like to create",
+    help="Choose which file you'd like to create. 'json' also writes the outcomes and discovery files.",
 )
 def main(input_path: Path, output_path: Path, export_types: list[Literal["puml", "dot", "json", "svg"]]) -> None:
     """
@@ -187,7 +202,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     index_entries: list[EbdIndexEntry] = []
 
     def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory) -> None:
-        color = "yellow" if category == ErrorCategory.PUML_EXPORT else "red"
+        color = "yellow" if category.value.startswith("WARNING") else "red"
         click.secho(f"{category.value}: {ebd_key}: {error}", fg=color)
         error_type_name = type(error).__name__
         key = f"[{category.value}] {error_type_name}"
@@ -256,6 +271,14 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         except Exception as unknown_error:  # pylint:disable=broad-except
             handle_known_error(unknown_error, ebd_key, ErrorCategory.GRAPH_CONVERSION)
             continue
+        if "json" in export_types and any(ebd_table.rows):
+            # EBDs without a table have nothing to explain, hence no outcomes file for them
+            try:
+                outcomes_path = output_path / Path(f"{ebd_key}.outcomes.json")
+                _dump_outcomes(outcomes_path, ebd_graph)
+                click.secho(f"💾 Successfully exported '{ebd_key}.outcomes.json' to {outcomes_path.absolute()}")
+            except Exception as outcomes_error:  # pylint:disable=broad-exception-caught
+                handle_known_error(outcomes_error, ebd_key, ErrorCategory.OUTCOMES_EXPORT)
         if "puml" in export_types:
             if not any(ebd_table.rows):
                 click.secho(f"EBD {ebd_key} has no ebd table; Skip puml creation!", fg="yellow")
@@ -310,9 +333,11 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         # ebd.schema.json: the JSON Schema of the <ebd_code>.json files, so consumers can reason over them.
         schema_text = json.dumps(EbdTable.model_json_schema(), indent=2, sort_keys=True)
         _write_json_text(output_path / "ebd.schema.json", schema_text)
+        # ebd_outcomes.schema.json: the JSON Schema of the <ebd_code>.outcomes.json files.
+        _write_json_text(output_path / "ebd_outcomes.schema.json", _outcomes_schema_text())
         click.secho(
             f"💾 Wrote index.json ({len(index.root)} EBDs), "
-            f"pruefi_to_key.json ({len(pruefi_to_key)} Prüfis) and ebd.schema.json",
+            f"pruefi_to_key.json ({len(pruefi_to_key)} Prüfis), ebd.schema.json and ebd_outcomes.schema.json",
             fg="green",
         )
 
