@@ -32,6 +32,7 @@ import logging
 import re
 from collections.abc import Iterable, Sequence
 from collections.abc import Set as AbstractSet
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Literal
@@ -213,37 +214,67 @@ def _issue_message(  # pylint:disable=too-many-arguments,too-many-positional-arg
     return text
 
 
-def _build_export_report(  # pylint:disable=too-many-arguments,too-many-positional-arguments
-    ebd_codes_in_document: Iterable[str],
-    raw_issues: Iterable[tuple[str, str | None, ErrorCategory, Exception]],
-    output_path: Path,
-    export_types: Sequence[str],
-    ebds_without_table: AbstractSet[str],
+@dataclass(frozen=True)
+class _RecordedIssue:
+    """
+    What the report needs to know about a handled error, as plain data.
+    Deliberately not the exception: it would keep its traceback, and thereby the local variables of all frames
+    (docx tables, graphs, dot code), alive until the end of the run.
+    """
+
+    ebd_code: str
+    ebd_name: str | None
+    category: ErrorCategory
+    error_type: str
+    message: str  # already sanitised, see ``_issue_message``
+
+
+def _record_issue(  # pylint:disable=too-many-arguments,too-many-positional-arguments
+    error: Exception,
+    ebd_code: str,
+    ebd_name: str | None,
+    category: ErrorCategory,
     *,
+    output_path: Path,
     input_path: Path,
     kroki_host: str,
     kroki_port: int,
+) -> _RecordedIssue:
+    """extracts the plain data from the error; this is the last place that looks at the exception object"""
+    return _RecordedIssue(
+        ebd_code=ebd_code,
+        ebd_name=ebd_name,
+        category=category,
+        error_type=type(error).__name__,
+        message=_issue_message(error, output_path, input_path, kroki_host, kroki_port),
+    )
+
+
+def _build_export_report(
+    ebd_codes_in_document: Iterable[str],
+    recorded_issues: Iterable[_RecordedIssue],
+    output_path: Path,
+    export_types: Sequence[str],
+    ebds_without_table: AbstractSet[str],
 ) -> EbdExportReport:
     """
-    Turns the errors collected during the run into the report.
+    Turns the issues recorded during the run into the report.
     ``missing_files`` is what is really absent in the output directory (of the files the export types ask for),
     not a guess based on the stage; so the claim holds even if e.g. only the dot but not the svg got written.
     """
     category_order = list(_ISSUE_CLASSIFICATION)
     issues: list[EbdExportIssue] = []
-    for ebd_code, ebd_name, category, error in sorted(
-        raw_issues, key=lambda raw_issue: (raw_issue[0], category_order.index(raw_issue[2]))
-    ):
-        stage, severity = _ISSUE_CLASSIFICATION[category]
-        expected = _expected_files(ebd_code, export_types, ebd_code not in ebds_without_table)
+    for recorded in sorted(recorded_issues, key=lambda issue: (issue.ebd_code, category_order.index(issue.category))):
+        stage, severity = _ISSUE_CLASSIFICATION[recorded.category]
+        expected = _expected_files(recorded.ebd_code, export_types, recorded.ebd_code not in ebds_without_table)
         issues.append(
             EbdExportIssue(
-                ebd_code=ebd_code,
-                ebd_name=ebd_name,
+                ebd_code=recorded.ebd_code,
+                ebd_name=recorded.ebd_name,
                 stage=stage,
                 severity=severity,
-                error_type=type(error).__name__,
-                message=_issue_message(error, output_path, input_path, kroki_host, kroki_port),
+                error_type=recorded.error_type,
+                message=recorded.message,
                 missing_files=[name for name in expected if not (output_path / name).exists()],
             )
         )
@@ -342,13 +373,26 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
     # natural-language question or Prüfidentifikator -> ebd_code -> file without crawling the directory.
     index_entries: list[EbdIndexEntry] = []
 
-    # every handled error, in the order of occurrence; becomes export_report.json once the files on disk are known
-    raw_issues: list[tuple[str, str | None, ErrorCategory, Exception]] = []
+    # plain data (no exception objects, see _RecordedIssue) about every handled error, in the order of occurrence;
+    # becomes export_report.json once the files on disk are known; only recorded if the report will be written
+    recorded_issues: list[_RecordedIssue] = []
     # EBDs without a table legitimately have neither .outcomes.json nor .puml
     ebds_without_table: set[str] = set()
 
     def handle_known_error(error: Exception, ebd_key: str, category: ErrorCategory, ebd_name: str | None) -> None:
-        raw_issues.append((ebd_key, ebd_name, category, error))
+        if "json" in export_types:  # the report is only written with the json export
+            recorded_issues.append(
+                _record_issue(
+                    error,
+                    ebd_key,
+                    ebd_name,
+                    category,
+                    output_path=output_path,
+                    input_path=input_path,
+                    kroki_host=settings.kroki_host,
+                    kroki_port=settings.kroki_port,
+                )
+            )
         color = "yellow" if category.value.startswith("WARNING") else "red"
         click.secho(f"{category.value}: {ebd_key}: {error}", fg=color)
         error_type_name = type(error).__name__
@@ -488,14 +532,7 @@ def _main(input_path: Path, output_path: Path, export_types: list[Literal["puml"
         # export_report.json: what is missing in this directory (compared to the document) and why.
         # Built last, because it checks which of the expected files actually exist.
         export_report = _build_export_report(
-            all_ebd_keys.keys(),
-            raw_issues,
-            output_path,
-            export_types,
-            ebds_without_table,
-            input_path=input_path,
-            kroki_host=settings.kroki_host,
-            kroki_port=settings.kroki_port,
+            all_ebd_keys.keys(), recorded_issues, output_path, export_types, ebds_without_table
         )
         _write_json_text(output_path / "export_report.json", export_report.model_dump_json(indent=2))
         _write_json_text(output_path / "export_report.schema.json", _export_report_schema_text())

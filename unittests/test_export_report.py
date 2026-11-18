@@ -3,12 +3,15 @@ tests ``export_report.json``: which EBDs/files are missing in the output directo
 runs ``_main`` without a docx file and without kroki
 """
 
+import dataclasses
+import gc
 import json
+import weakref
 from pathlib import Path
 from typing import Any, Literal
 
 import pytest
-from ebdamame import TableNotFoundError
+from ebdamame import EbdTableNotConvertibleError, TableNotFoundError
 from pytest import MonkeyPatch
 from rebdhuhn.graph_conversion import convert_table_to_graph
 from rebdhuhn.kroki import KrokiDotBadRequestError
@@ -16,7 +19,14 @@ from rebdhuhn.models.errors import GraphConversionError
 
 import ebd_toolchain.main
 from ebd_toolchain.discovery import EbdExportIssue, EbdExportReport
-from ebd_toolchain.main import _ISSUE_CLASSIFICATION, ErrorCategory, _build_export_report, _issue_message, _main
+from ebd_toolchain.main import (
+    _ISSUE_CLASSIFICATION,
+    ErrorCategory,
+    _build_export_report,
+    _issue_message,
+    _main,
+    _RecordedIssue,
+)
 from unittests.scraping_stubs import SCRAPING_FAILS, WITH_TABLE, WITHOUT_TABLE
 
 _ExportTypes = list[Literal["puml", "dot", "json", "svg"]]
@@ -311,13 +321,10 @@ def test_every_error_category_yields_a_valid_issue(category: ErrorCategory, tmp_
     assert category in _ISSUE_CLASSIFICATION
     report = _build_export_report(
         [WITH_TABLE],
-        [(WITH_TABLE, None, category, ValueError("boom"))],
+        [_RecordedIssue(WITH_TABLE, None, category, "ValueError", "boom")],
         tmp_path,
         ["json", "dot", "svg", "puml"],
         set(),
-        input_path=Path("in.docx"),
-        kroki_host="localhost",
-        kroki_port=8000,
     )
     assert len(report.issues) == 1
     assert report.issues[0].severity == ("warning" if category.value.startswith("WARNING") else "error")
@@ -363,3 +370,62 @@ def test_bare_input_file_name_is_replaced() -> None:
     assert _message("cannot open ebd.docx (/data/in/ebd.docx) not myebd.docx.bak") == (
         "cannot open <input> (<input>) not myebd.docx.bak"
     )
+
+
+class _Sentinel:  # pylint:disable=too-few-public-methods
+    """stands for a big object (docx tables, a graph, dot code) that a failing step has in its local variables"""
+
+
+def test_recorded_issues_hold_only_plain_data_no_exceptions() -> None:
+    error = ValueError("boom")
+    recorded = _RecordedIssue(WITH_TABLE, "name", ErrorCategory.SCRAPING, type(error).__name__, str(error))
+    for field in dataclasses.fields(recorded):
+        assert not isinstance(getattr(recorded, field.name), BaseException)
+    assert {type(getattr(recorded, field.name)) for field in dataclasses.fields(recorded)} <= {str, ErrorCategory}
+
+
+def test_failed_ebds_do_not_keep_their_exceptions_and_frames_alive(
+    patched_scraping: Path, monkeypatch: MonkeyPatch
+) -> None:
+    """the run must not keep an exception (and with it the traceback's frames and their locals) after handling it"""
+    sentinel_refs: list[weakref.ReferenceType[_Sentinel]] = []
+    alive_when_next_ebd_starts: list[bool] = []
+    main_module: Any = ebd_toolchain.main
+    original_get_tables = main_module.get_ebd_docx_tables
+
+    def _failing_step() -> None:
+        big_object = _Sentinel()
+        sentinel_refs.append(weakref.ref(big_object))
+        raise EbdTableNotConvertibleError(WITH_TABLE, f"cannot process {big_object.__class__.__name__}")
+
+    def _get_tables(docx_file_path: Path, ebd_key: str) -> Any:
+        if ebd_key == WITH_TABLE:
+            _failing_step()
+        if sentinel_refs:  # the failed EBD has been handled by now
+            gc.collect()
+            alive_when_next_ebd_starts.append(sentinel_refs[0]() is not None)
+        return original_get_tables(docx_file_path=docx_file_path, ebd_key=ebd_key)
+
+    monkeypatch.setattr(ebd_toolchain.main, "get_ebd_docx_tables", _get_tables)
+    _main(Path("unused.docx"), patched_scraping, _JSON_AND_DOT)  # WITH_TABLE fails, then WITHOUT_TABLE is processed
+    assert alive_when_next_ebd_starts == [False]
+    assert [i.ebd_code for i in _read_report(patched_scraping).issues] == [WITH_TABLE]
+
+
+def test_nothing_is_recorded_without_json(patched_scraping: Path, monkeypatch: MonkeyPatch, capsys: Any) -> None:
+    def _fail(*_: Any, **__: Any) -> None:
+        raise ValueError("boom")
+
+    monkeypatch.setattr(ebd_toolchain.main, "_dump_dot", _fail)
+    export_types: _ExportTypes = ["dot"]
+    recorded: list[Any] = []
+    original: Any = ebd_toolchain.main._record_issue  # pylint:disable=protected-access
+
+    def _spy(*args: Any, **kwargs: Any) -> Any:
+        recorded.append(original(*args, **kwargs))
+        return recorded[-1]
+
+    monkeypatch.setattr(ebd_toolchain.main, "_record_issue", _spy)
+    _main(Path("unused.docx"), patched_scraping, export_types)
+    assert not recorded
+    assert '"[ERROR:svg_export] ValueError"' in capsys.readouterr().out  # the printed summary still works
