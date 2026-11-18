@@ -16,7 +16,7 @@ from rebdhuhn.models.errors import GraphConversionError
 
 import ebd_toolchain.main
 from ebd_toolchain.discovery import EbdExportIssue, EbdExportReport
-from ebd_toolchain.main import _ISSUE_CLASSIFICATION, ErrorCategory, _build_export_report, _main
+from ebd_toolchain.main import _ISSUE_CLASSIFICATION, ErrorCategory, _build_export_report, _issue_message, _main
 from unittests.scraping_stubs import SCRAPING_FAILS, WITH_TABLE, WITHOUT_TABLE
 
 _ExportTypes = list[Literal["puml", "dot", "json", "svg"]]
@@ -225,15 +225,16 @@ def test_empty_exception_text_falls_back_to_the_error_type(patched_scraping: Pat
     assert [i.message for i in _read_report(patched_scraping).issues] == ["AssertionError"]
 
 
-def test_table_not_found_error_message(patched_scraping: Path, monkeypatch: MonkeyPatch) -> None:
+def test_table_not_found_error_has_an_empty_text_and_falls_back_to_the_type(
+    patched_scraping: Path, monkeypatch: MonkeyPatch
+) -> None:
     def _get_tables(docx_file_path: Path, ebd_key: str) -> Any:  # pylint:disable=unused-argument
-        raise TableNotFoundError(ebd_key)
+        raise TableNotFoundError(ebd_key=ebd_key)  # the keyword form is how ebdamame raises it; its str is empty
 
     monkeypatch.setattr(ebd_toolchain.main, "get_ebd_docx_tables", _get_tables)
     _main(Path("unused.docx"), patched_scraping, _JSON_AND_DOT)
     issues = _read_report(patched_scraping).issues
-    assert {(i.error_type, i.message) for i in issues} == {("TableNotFoundError", i.ebd_code) for i in issues}
-    assert all(i.message for i in issues)
+    assert [(i.error_type, i.message) for i in issues] == [("TableNotFoundError", "TableNotFoundError")] * 2
 
 
 def test_scraping_error_of_a_table_less_ebd_does_not_expect_outcomes_or_puml(
@@ -321,3 +322,44 @@ def test_every_error_category_yields_a_valid_issue(category: ErrorCategory, tmp_
     assert len(report.issues) == 1
     assert report.issues[0].severity == ("warning" if category.value.startswith("WARNING") else "error")
     assert category.value.endswith(report.issues[0].stage)
+
+
+def _message(text: str, output: str = "/home/alice/work/out", input_doc: str = "/data/in/ebd.docx") -> str:
+    return _issue_message(ValueError(text), Path(output), Path(input_doc), "localhost", 8000)
+
+
+@pytest.mark.parametrize(
+    "text, output, expected",
+    [
+        pytest.param("rel ../a ./b", ".", "rel ../a ./b", id="dot-only relative path is left alone"),
+        pytest.param("rel ../a ./b", "..", "rel ../a ./b", id="dot-dot relative path is left alone"),
+        pytest.param(
+            "see out/x.svg and xout/y and a/out/z", "out", "see <output>/x.svg and xout/y and a/out/z", id="bare"
+        ),
+        pytest.param(
+            "/home/alice/work/outer/x and /home/alice/work/out2/y",
+            "/home/alice/work/out",
+            "<path> and <path>",
+            id="longer siblings are not cut in the middle",
+        ),
+        pytest.param(
+            "wrote /home/alice/work/out/E.svg, then /home/alice/work/out.",
+            "/home/alice/work/out",
+            "wrote <output>/E.svg, then <output>.",
+            id="exact path",
+        ),
+    ],
+)
+def test_output_path_replacement(text: str, output: str, expected: str) -> None:
+    assert _message(text, output=output) == expected
+
+
+def test_kroki_port_is_matched_completely() -> None:
+    assert _message("localhost:80001 and localhost:8000") == "localhost:80001 and <kroki>"
+    assert _message("http://localhost:80001/x") == "http://localhost:80001/x"
+
+
+def test_bare_input_file_name_is_replaced() -> None:
+    assert _message("cannot open ebd.docx (/data/in/ebd.docx) not myebd.docx.bak") == (
+        "cannot open <input> (<input>) not myebd.docx.bak"
+    )

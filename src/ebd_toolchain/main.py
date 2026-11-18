@@ -158,14 +158,20 @@ def _expected_files(ebd_code: str, export_types: Sequence[str], has_table: bool)
     return expected
 
 
+_NOT_PART_OF_A_NAME = r"(?![\w\-]|\.\w)"  # what must not follow a replaced path (a sentence's final dot may)
+
+
 def _path_pattern(path: Path, token: str) -> list[tuple[re.Pattern[str], str]]:
     """patterns that replace a path (absolute and as given) by the token"""
     patterns: list[tuple[re.Pattern[str], str]] = []
     for form in dict.fromkeys([str(path.absolute()), str(path)]):  # longest first, no duplicates
-        if Path(form).is_absolute() or path.suffix or len(path.parts) > 1:
-            patterns.append((re.compile(re.escape(form)), token))
-        else:  # a bare relative name like "output" is only a path if something follows it
-            patterns.append((re.compile(re.escape(form) + r"(?=/)"), token))
+        if Path(form).is_absolute():
+            patterns.append((re.compile(re.escape(form) + _NOT_PART_OF_A_NAME), token))
+        elif path.suffix or len(path.parts) > 1:
+            patterns.append((re.compile(r"(?<![\w./-])" + re.escape(form) + _NOT_PART_OF_A_NAME), token))
+        elif form.strip("."):  # a bare relative name like "output" is only a path if something follows it
+            patterns.append((re.compile(r"(?<![\w./-])" + re.escape(form) + r"(?=/)"), token))
+        # else: "." or "..": too ambiguous (they are part of "./x" and "../x"), leave them alone
     return patterns
 
 
@@ -187,9 +193,14 @@ def _issue_message(  # pylint:disable=too-many-arguments,too-many-positional-arg
     replacements = [
         *_path_pattern(output_path, "<output>"),
         *_path_pattern(input_path, "<input>"),
-        (re.compile(re.escape(f"http://{host_and_port}") + "|" + re.escape(f"https://{host_and_port}")), "<kroki>"),
-        (re.compile(re.escape(host_and_port)), "<kroki>"),
-        (re.compile(rf"host=['\"]{re.escape(kroki_host)}['\"], port={kroki_port}"), "<kroki>"),
+        # messages may quote just the file name of the document
+        *(
+            [(re.compile(r"(?<![\w./-])" + re.escape(input_path.name) + _NOT_PART_OF_A_NAME), "<input>")]
+            if input_path.suffix
+            else []
+        ),
+        (re.compile(rf"(?:https?://)?{re.escape(host_and_port)}(?!\d)"), "<kroki>"),
+        (re.compile(rf"host=['\"]{re.escape(kroki_host)}['\"], port={kroki_port}(?!\d)"), "<kroki>"),
         (re.compile(r" at 0x[0-9a-fA-F]+"), ""),
         # any other absolute path with at least two segments
         (re.compile(r"(?<![\w/])/[\w.\-]+(?:/[\w.\-]+)+/?"), "<path>"),
