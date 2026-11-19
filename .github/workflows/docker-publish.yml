@@ -4,6 +4,11 @@ on:
     types:
       - created
 
+# GITHUB_TOKEN needs write access to packages to push to GHCR; this replaces the former (expiring) personal access token
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   push_to_registry:
     name: Push Docker image to GHCR
@@ -19,9 +24,10 @@ jobs:
           VERSION=$(echo ${GITHUB_REF#refs/tags/})
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: Log in to GHCR
-        # the token has repo:(read+write) and package(read+write) scope and expires on 2027-05-15
-        # https://github.com/Hochfrequenz/ebd_toolchain/settings/secrets/actions/GHCR_PUSH_TOKEN
-        run: echo "${{ secrets.GHCR_PUSH_TOKEN }}" | docker login ghcr.io -u hf-kklein --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
       - name: Build and push
         run: |
