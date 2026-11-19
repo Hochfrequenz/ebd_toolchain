@@ -692,7 +692,7 @@ type-check = [
 
 [[package]]
 name = "ebdamame"
-version = "1.0.1"
+version = "1.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -701,9 +701,9 @@ dependencies = [
     { name = "python-docx" },
     { name = "rebdhuhn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/49/99bca0b8dafde4e46a6fca7e61efa2e762cf2dbfd67d5868cb66dd138b11/ebdamame-1.0.1.tar.gz", hash = "sha256:fd3338e74f7ecc540fd54d7a7e65a7d771f36b25e7bdfcefc4a6285d0338e295", size = 102758, upload-time = "2026-07-24T13:54:55.444Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/f8/0c2225f8c1ca3ffeb52348cefe51eeaddb87849679c341f28101bd248554/ebdamame-1.0.2.tar.gz", hash = "sha256:c56bd027fcc260fc75d870c4b8578f44901f7e3da5ca0ca829eeb0e15d2a0374", size = 115430, upload-time = "2026-10-26T22:36:46.477Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/c9/ae8be41a3a0e72a0c8ba45b3a32dc23689b86c705efe7c5170f600f52744/ebdamame-1.0.1-py3-none-any.whl", hash = "sha256:1627ef79e5dd0d9af0458097ec019a14dd19dbb376c37cb5071012a4d41c9c66", size = 30544, upload-time = "2026-07-24T13:54:54.571Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/38/1704a1930f4ef4352ec2581181b6cb5af035dade2a80414aa76171045bf7/ebdamame-1.0.2-py3-none-any.whl", hash = "sha256:d5997c57ec6a7706e768eef440add1bafa40920186fcffd0db4e288366ad3919", size = 30527, upload-time = "2026-10-26T22:36:45.375Z" },
 ]
 
 [[package]]
