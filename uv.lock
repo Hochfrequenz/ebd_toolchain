@@ -661,7 +661,7 @@ requires-dist = [
     { name = "fundamend", extras = ["sqlmodels"], specifier = ">=0.37.0" },
     { name = "py7zr" },
     { name = "pydantic-settings" },
-    { name = "rebdhuhn", specifier = ">=1.3.1" },
+    { name = "rebdhuhn", specifier = ">=1.3.3" },
 ]
 
 [package.metadata.requires-dev]
@@ -1787,7 +1787,7 @@ wheels = [
 
 [[package]]
 name = "rebdhuhn"
-version = "1.3.1"
+version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "efoli" },
@@ -1797,9 +1797,9 @@ dependencies = [
     { name = "requests" },
     { name = "svgutils" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/83/b9/d7611da533acc2320511d04000da8e3c91ff2e5c2e25ed348d510dc84c2c/rebdhuhn-1.3.1.tar.gz", hash = "sha256:9293d3bdc4471f7ad8b71daf7b76d99a6aece8d0733f2ae3c57cc1b67f8304f3", size = 173412, upload-time = "2026-11-18T13:45:03.819Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/8a/403af8d57d7dc54a4707cc0e8de807386439080f9fd642488826765b684e/rebdhuhn-1.3.3.tar.gz", hash = "sha256:7a958590b55002fc8797fb5d06e84892f3b1fb3233fe78597f40f45c9843f62d", size = 173449, upload-time = "2026-11-23T13:00:09.586Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/18/38fb27804002df301a0023e076b217fa6ef8e971547589d29b4f28fa6ce4/rebdhuhn-1.3.1-py3-none-any.whl", hash = "sha256:5483ec2c89ad5c78987c5d0a88675c82111b792ff0905c75607fb61a5ae85291", size = 68817, upload-time = "2026-11-18T13:45:02.59Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/4b/7ca302d7acf5eeadd4c836d70e4bf9220892576622b62e18e32fd32422b8/rebdhuhn-1.3.3-py3-none-any.whl", hash = "sha256:36893d0ad57bf2490d780cfc7edeee24294cca479a365ca9b1168b009c576082", size = 68838, upload-time = "2026-11-23T13:00:08.519Z" },
 ]
 
 [[package]]
